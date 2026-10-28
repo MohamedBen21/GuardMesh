@@ -26,7 +26,7 @@ export const ADULT_LISTS = [
     name: 'StevenBlack porn-only',
     url: 'https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn-only/hosts',
   },
-  { name: 'OISD NSFW', url: 'https://nsfw.oisd.nl/' },
+  { name: 'HaGeZi NSFW', url: 'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/nsfw.txt' },
 ];
 
 /** Block well-known DNS-over-HTTPS resolvers so browsers can't sidestep the box. */
@@ -53,7 +53,8 @@ export class AdGuardHttp implements AdGuardApi {
   ) {}
 
   private async req(path: string, init: RequestInit = {}, auth = true): Promise<any> {
-    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    // AdGuard rejects a JSON content-type on an empty body (415), so only send it when there is a body.
+    const headers: Record<string, string> = init.body ? { 'content-type': 'application/json' } : {};
     const c = this.creds();
     if (auth && c) headers.authorization = 'Basic ' + Buffer.from(`${c.user}:${c.password}`).toString('base64');
     const res = await fetch(this.base + path, { ...init, headers });
@@ -89,7 +90,8 @@ export class AdGuardHttp implements AdGuardApi {
     await this.post(
       '/control/install/configure',
       {
-        web: { ip: '127.0.0.1', port: 3000 }, // admin UI reachable only from the box itself
+        // admin UI reachable only from the box itself (Windows/Docker test mode overrides this so the guardian container can reach it)
+        web: { ip: process.env.ADGUARD_WEB_BIND ?? '127.0.0.1', port: 3000 },
         dns: { ip: '0.0.0.0', port: 53 },
         username,
         password,
@@ -104,8 +106,14 @@ export class AdGuardHttp implements AdGuardApi {
       await this.tryPost('/control/filtering/add_url', { name: l.name, url: l.url, whitelist: false });
     }
     await this.tryPost('/control/filtering/set_rules', { rules: BYPASS_RULES });
-    await this.tryPost('/control/safesearch/enable'); // older API
-    await this.tryPost('/control/safesearch/settings', { enabled: true, bing: true, duckduckgo: true, google: true, pixabay: true, yandex: true, youtube: true });
+    try {
+      await this.req('/control/safesearch/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ enabled: true, bing: true, duckduckgo: true, ecosia: true, google: true, pixabay: true, yandex: true, youtube: true }),
+      });
+    } catch (e) {
+      console.warn(`[adguard] safesearch/settings failed (continuing): ${(e as Error).message}`);
+    }
     await this.tryPost('/control/parental/enable');
     await this.post('/control/protection', { enabled: true });
   }
