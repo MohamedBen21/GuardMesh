@@ -1,8 +1,9 @@
 import type { AdGuardApi } from './adguard.js';
 import type { ChangeKind, ChangeRequest, Store } from './store.js';
-import type { Notifier } from './notify.js';
+import type { AlertOpts, Notifier } from './notify.js';
 import { verifySecret } from './auth.js';
 import { id as newId, normMac } from './util.js';
+import { fmtDuration, fmtTime, t, type Vars } from './i18n.js';
 
 export interface Clock {
   now(): number;
@@ -31,9 +32,33 @@ export class Guardian {
     if (this.s.log.length > 200) this.s.log.splice(0, this.s.log.length - 200);
   }
 
-  private async alert(text: string) {
+  /** Logs the alert (in the configured language) and sends it to the partner. */
+  private async alert(key: string, vars: Vars = {}, opts?: AlertOpts) {
+    const text = t(this.s.lang, key, vars);
     this.note(text);
-    await this.notifier.send(text);
+    await this.notifier.send(text, opts);
+  }
+
+  deviceLabel(mac: string) {
+    const d = this.s.devices[mac];
+    return d?.name && d.name !== mac ? `${d.name} (${mac})` : mac;
+  }
+
+  /** Human description of a change, in the alert language. */
+  whatOf(c: ChangeRequest): string {
+    return c.kind === 'disable_all'
+      ? t(this.s.lang, 'what_pause')
+      : t(this.s.lang, 'what_exempt', { device: this.deviceLabel(c.mac!) });
+  }
+
+  async status(): Promise<{ protection: boolean | null; changes: ChangeRequest[] }> {
+    let protection: boolean | null = null;
+    try {
+      protection = await this.api.getProtection();
+    } catch {
+      /* adguard unreachable */
+    }
+    return { protection, changes: this.s.changes.filter((c) => c.status === 'pending' || c.status === 'active') };
   }
 
   async requestChange(input: { kind: ChangeKind; mac?: string; durationMinutes?: number | null }): Promise<ChangeRequest> {
@@ -59,15 +84,20 @@ export class Guardian {
       status: 'pending',
     };
     this.s.changes.push(req);
-    const what = req.kind === 'disable_all' ? 'pause ALL protection' : `stop filtering device ${this.deviceLabel(mac!)}`;
-    await this.alert(`Request to ${what}. It will take effect at ${new Date(req.unlockAt).toISOString()} unless cancelled.`);
+
+    const lang = this.s.lang;
+    await this.alert(
+      req.kind === 'disable_all' ? 'req_pause' : 'req_exempt',
+      {
+        delay: fmtDuration(lang, this.s.delayMinutes),
+        time: fmtTime(req.unlockAt, lang),
+        device: mac ? this.deviceLabel(mac) : '',
+        durNote: req.durationMinutes ? ' ' + t(lang, 'dur_note', { dur: fmtDuration(lang, req.durationMinutes) }) : '',
+      },
+      { button: { id: req.id, labelKey: 'btn_cancel' } },
+    );
     await this.store.save();
     return req;
-  }
-
-  private deviceLabel(mac: string) {
-    const d = this.s.devices[mac];
-    return d?.name ? `${d.name} (${mac})` : mac;
   }
 
   /** Cancelling is a strengthening action: always allowed, no key needed. */
@@ -77,7 +107,7 @@ export class Guardian {
     const wasActive = c.status === 'active';
     c.status = 'cancelled';
     if (wasActive) await this.revert(c);
-    await this.alert(`Change ${c.kind}${c.mac ? ' ' + c.mac : ''} was cancelled.`);
+    await this.alert('cancelled', { what: this.whatOf(c) });
     await this.store.save();
     return true;
   }
@@ -99,7 +129,7 @@ export class Guardian {
       await this.revert(c);
     }
     await this.api.setProtection(true);
-    await this.alert('Protection restored manually.');
+    await this.alert('restored');
     await this.store.save();
   }
 
@@ -117,20 +147,28 @@ export class Guardian {
   async tick(): Promise<void> {
     if (!this.s.setupDone) return;
     const now = this.clock.now();
+    const lang = this.s.lang;
 
     // 1. activate due requests
     for (const c of this.s.changes.filter((x) => x.status === 'pending' && x.unlockAt <= now)) {
       await this.apply(c);
       c.status = 'active';
       c.activeUntil = c.durationMinutes ? now + c.durationMinutes * 60_000 : null;
-      await this.alert(`Change applied: ${c.kind}${c.mac ? ' ' + this.deviceLabel(c.mac) : ''}.`);
+      await this.alert(
+        c.kind === 'disable_all' ? 'applied_pause' : 'applied_exempt',
+        {
+          device: c.mac ? this.deviceLabel(c.mac) : '',
+          untilNote: c.activeUntil ? ' ' + t(lang, 'until_note', { time: fmtTime(c.activeUntil, lang) }) : '',
+        },
+        { button: { id: c.id, labelKey: 'btn_restore' } },
+      );
     }
 
     // 2. expire finished windows
     for (const c of this.s.changes.filter((x) => x.status === 'active' && x.activeUntil != null && x.activeUntil <= now)) {
       c.status = 'expired';
       await this.revert(c);
-      await this.alert(`Change expired and protection restored: ${c.kind}${c.mac ? ' ' + c.mac : ''}.`);
+      await this.alert('expired');
     }
 
     // 3. integrity: actual state must match desired state
@@ -139,11 +177,7 @@ export class Guardian {
     const protectionNow = await this.api.getProtection();
     if (protectionNow !== wantProtection) {
       await this.api.setProtection(wantProtection);
-      await this.alert(
-        wantProtection
-          ? 'TAMPER: protection was switched off outside an approved window; re-enabled.'
-          : 'Protection re-paused to match an approved window.',
-      );
+      await this.alert(wantProtection ? 'tamper_off' : 'repaused');
     }
 
     const wantExempt = new Set<string>([
@@ -154,7 +188,7 @@ export class Guardian {
     for (const mac of haveExempt) {
       if (!wantExempt.has(mac)) {
         await this.api.setExempt(mac, '', false);
-        await this.alert(`TAMPER: unauthorised exemption for ${mac} removed.`);
+        await this.alert('tamper_exempt', { device: mac });
       }
     }
     for (const mac of wantExempt) {
@@ -170,7 +204,7 @@ export class Guardian {
           policy: 'strict',
           firstSeen: new Date(now).toISOString(),
         };
-        await this.alert(`New device on the network: ${l.hostname || 'unknown'} (${l.mac}). It is filtered by default.`);
+        await this.alert('new_device', { device: l.hostname ? `${l.hostname} (${l.mac})` : l.mac });
       }
     }
 
