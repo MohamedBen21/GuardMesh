@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FocusGuard Network</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --muted:#667085; --line:#e4e7ec; --accent:#2f6f5e; --danger:#b42318; --warn:#b54708; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#10151b; --card:#171e26; --ink:#e8edf2; --muted:#98a2b3; --line:#2a333d; --accent:#4fb39a; --danger:#f97066; --warn:#fdb022; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; } h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { display:block; margin:10px 0 4px; font-weight:600; font-size:.9rem; }
+  input[type=text], input[type=password], select { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; }
+  button { padding:10px 16px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  button.secondary { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  button.danger { background:var(--danger); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:8px 0; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .row:first-of-type { border-top:0; }
+  .muted { color:var(--muted); font-size:.9rem; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:99px; font-size:.8rem; font-weight:600; }
+  .ok { background:color-mix(in srgb,var(--accent) 18%,transparent); color:var(--accent); }
+  .off { background:color-mix(in srgb,var(--danger) 18%,transparent); color:var(--danger); }
+  .key { font:700 1.3rem ui-monospace,Menlo,monospace; letter-spacing:.05em; padding:12px; background:var(--bg); border:1px dashed var(--line); border-radius:8px; text-align:center; }
+  .warn { color:var(--warn); }
+  .actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  ol { padding-left: 20px; } li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>FocusGuard Network</h1>
+  <p class="sub" id="sub">Loading…</p>
+  <div id="app"></div>
+</main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const app = $('#app');
+let status = null;
+let step = 1;
+const wiz = { mode: 'self', delayMinutes: 1440, partner: {}, partnerKey: null, delivered: false };
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDelay = (m) => (m % 1440 === 0 ? `${m / 1440} day(s)` : m % 60 === 0 ? `${m / 60} hour(s)` : `${m} min`);
+const fmtLeft = (ts) => { const ms = ts - Date.now(); if (ms <= 0) return 'now'; const m = Math.ceil(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
+const fail = (e) => alert(e.message);
+
+async function load() {
+  status = await api('/api/status');
+  render();
+}
+
+function render() {
+  $('#sub').textContent = status.setupDone ? 'Network protection dashboard' : `Setup — step ${step} of 5`;
+  status.setupDone ? renderDash() : renderWizard();
+}
+
+/* ---------- Wizard ---------- */
+function renderWizard() {
+  if (step === 1) {
+    app.innerHTML = `<div class="card">
+      <h2>Who is this for?</h2>
+      <label><input type="radio" name="mode" value="self" ${wiz.mode === 'self' ? 'checked' : ''}> Me — I want help staying away from adult sites</label>
+      <label><input type="radio" name="mode" value="parental" ${wiz.mode === 'parental' ? 'checked' : ''}> My children / family</label>
+      <label for="delay">Waiting period before protection can be paused</label>
+      <select id="delay">
+        ${[[60, '1 hour'], [360, '6 hours'], [1440, '24 hours (recommended)'], [4320, '3 days']].map(([v, t]) => `<option value="${v}" ${wiz.delayMinutes === v ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+      <p class="muted">Turning protection off is never instant. It needs a request, a waiting period, and your partner is told. That gap is what protects you in a weak moment.</p>
+      <div class="actions"><button id="next">Continue</button></div></div>`;
+    $('#next').onclick = () => { wiz.mode = $('input[name=mode]:checked').value; wiz.delayMinutes = Number($('#delay').value); step = 2; render(); };
+  } else if (step === 2) {
+    app.innerHTML = `<div class="card">
+      <h2>Your accountability partner</h2>
+      <p class="muted">Choose someone you trust (a friend, spouse, parent). They get a <b>secret key</b> that you will not have, and they are notified of any request to weaken protection. Best option: the partner is next to you now, or receives the key by Telegram.</p>
+      <label>Partner's Telegram chat ID (optional)</label><input type="text" id="tgChat" placeholder="123456789">
+      <label>Telegram bot token (optional)</label><input type="text" id="tgToken" placeholder="123456:ABC…">
+      <label>Webhook URL (optional, e.g. Discord/Slack/ntfy)</label><input type="text" id="hook" placeholder="https://…">
+      <p class="muted">If you leave all three empty, the key will be shown once on the next screen — hand the device to your partner so they can write it down.</p>
+      <div class="actions"><button class="secondary" id="back">Back</button><button id="next">Create protection</button></div></div>`;
+    $('#back').onclick = () => { step = 1; render(); };
+    $('#next').onclick = async (e) => {
+      e.target.disabled = true; e.target.textContent = 'Setting up…';
+      try {
+        const r = await api('/api/setup', { mode: wiz.mode, delayMinutes: wiz.delayMinutes, partner: { telegramChatId: $('#tgChat').value.trim(), telegramBotToken: $('#tgToken').value.trim(), webhookUrl: $('#hook').value.trim() } });
+        wiz.partnerKey = r.partnerKey || null; wiz.delivered = r.keyDeliveredToPartner; step = 3; render();
+      } catch (err) { fail(err); e.target.disabled = false; e.target.textContent = 'Create protection'; }
+    };
+  } else if (step === 3) {
+    app.innerHTML = `<div class="card">
+      <h2>Partner key</h2>
+      ${wiz.delivered ? '<p>The key was sent directly to your partner. You never see it — that is the point.</p>' :
+        `<p class="warn"><b>Partner: write this down now. It is shown only once.</b></p><div class="key">${esc(wiz.partnerKey)}</div>
+         <p class="muted">The protected person should look away. Without this key, nobody can skip the waiting period or change settings.</p>`}
+      <div class="actions"><button id="next">${wiz.delivered ? 'Continue' : 'Key saved — continue'}</button></div></div>`;
+    $('#next').onclick = () => { wiz.partnerKey = null; step = 4; render(); };
+  } else if (step === 4) {
+    app.innerHTML = `<div class="card">
+      <h2>Point your network at this box</h2>
+      <p>This box must hand out the network addresses so it can see every device:</p>
+      <ol>
+        <li>Open your Wi-Fi router's admin page (usually <code>192.168.1.1</code>, the password is often on a sticker).</li>
+        <li>Find <b>DHCP</b> / <b>LAN settings</b> and <b>turn the DHCP server OFF</b>. Save.</li>
+        <li>Come back here and press the button.</li>
+      </ol>
+      <p class="muted">Tip: also set a new router admin password and give it to your partner, so the router can't be switched back quietly.</p>
+      <div class="actions"><button class="secondary" id="back">Back</button><button id="next">Router DHCP is off — continue</button></div></div>`;
+    $('#back').onclick = () => { step = 3; render(); };
+    $('#next').onclick = async (e) => { e.target.disabled = true; try { await api('/api/setup/dhcp', {}); step = 5; render(); } catch (err) { fail(err); e.target.disabled = false; } };
+  } else if (step === 5) {
+    app.innerHTML = `<div class="card"><h2>Which devices are trusted?</h2>
+      <p class="muted">Everything is filtered by default, including new devices. Only tick devices that should NOT be filtered (for example, the parents' laptop). Devices appear after they reconnect to Wi-Fi.</p>
+      <div id="devs"><p class="muted">Looking for devices…</p></div>
+      <div class="actions"><button class="secondary" id="refresh">Refresh</button><button id="finish">Finish setup</button></div></div>`;
+    const refresh = async () => {
+      try {
+        const devs = await api('/api/devices');
+        $('#devs').innerHTML = devs.length ? devs.map((d) => `<div class="row"><label style="margin:0;font-weight:400"><input type="checkbox" value="${esc(d.mac)}"> ${esc(d.name)} <span class="muted">${esc(d.mac)}</span></label></div>`).join('') : '<p class="muted">No devices yet. Turn Wi-Fi off and on on your phone/laptop, then press Refresh.</p>';
+      } catch (err) { $('#devs').innerHTML = `<p class="warn">${esc(err.message)}</p>`; }
+    };
+    $('#refresh').onclick = refresh; refresh();
+    $('#finish').onclick = async () => { try { await api('/api/setup/finish', { trusted: [...document.querySelectorAll('#devs input:checked')].map((i) => i.value) }); await load(); } catch (err) { fail(err); } };
+  }
+}
+
+/* ---------- Dashboard ---------- */
+function renderDash() {
+  const on = status.protection !== false;
+  const pendings = status.changes;
+  app.innerHTML = `
+  <div class="card">
+    <div class="row"><div><h2 style="margin:0">Protection</h2><span class="muted">Waiting period: ${fmtDelay(status.delayMinutes)}</span></div>
+    <span class="pill ${on ? 'ok' : 'off'}">${status.protection === null ? 'unknown' : on ? 'ON' : 'PAUSED'}</span></div>
+    <div class="actions">
+      <button id="restore" class="${on ? 'secondary' : ''}">Restore protection now</button>
+      <button id="pause" class="secondary">Request a pause…</button>
+    </div>
+  </div>
+  <div class="card"><h2>Requests</h2>
+    ${pendings.length ? pendings.map((c) => `<div class="row"><div><b>${c.kind === 'disable_all' ? 'Pause all protection' : 'Stop filtering ' + esc(devName(c.mac))}</b><br>
+      <span class="muted">${c.status === 'pending' ? 'Starts in ' + fmtLeft(c.unlockAt) : 'Active' + (c.activeUntil ? ', ends in ' + fmtLeft(c.activeUntil) : ' until restored')}</span></div>
+      <div><button class="secondary" data-cancel="${c.id}">Cancel</button>
+      ${c.status === 'pending' ? `<button class="secondary" data-approve="${c.id}">Partner approve</button>` : ''}</div></div>`).join('') : '<p class="muted">No pending requests.</p>'}
+  </div>
+  <div class="card"><h2>Devices</h2>
+    ${status.devices.length ? status.devices.map((d) => `<div class="row"><div>${esc(d.name)}<br><span class="muted">${esc(d.mac)}</span></div>
+      <div><span class="pill ${d.policy === 'strict' ? 'ok' : 'off'}">${d.policy === 'strict' ? 'filtered' : 'not filtered'}</span>
+      ${d.policy === 'strict' ? `<button class="secondary" data-exempt="${esc(d.mac)}">Request exemption</button>` : `<button class="secondary" data-strict="${esc(d.mac)}">Filter again</button>`}</div></div>`).join('') : '<p class="muted">No devices seen yet.</p>'}
+  </div>
+  <div class="card"><h2>Recent activity</h2>${status.log.slice().reverse().map((l) => `<div class="muted">${new Date(l.at).toLocaleString()} — ${esc(l.event)}</div>`).join('') || '<p class="muted">Nothing yet.</p>'}</div>`;
+
+  $('#restore').onclick = async () => { try { await api('/api/restore', {}); load(); } catch (e) { fail(e); } };
+  $('#pause').onclick = async () => {
+    const mins = prompt('Pause for how many minutes once the waiting period ends? (max 1440)', '60');
+    if (!mins) return;
+    try { await api('/api/changes', { kind: 'disable_all', durationMinutes: Number(mins) }); load(); } catch (e) { fail(e); }
+  };
+  app.querySelectorAll('[data-cancel]').forEach((b) => (b.onclick = async () => { try { await api(`/api/changes/${b.dataset.cancel}/cancel`, {}); load(); } catch (e) { fail(e); } }));
+  app.querySelectorAll('[data-approve]').forEach((b) => (b.onclick = async () => {
+    const k = prompt('Partner key:'); if (!k) return;
+    try { await api(`/api/changes/${b.dataset.approve}/approve`, { partnerKey: k }); load(); } catch (e) { fail(e); }
+  }));
+  app.querySelectorAll('[data-exempt]').forEach((b) => (b.onclick = async () => {
+    const mins = prompt('Exempt for how many minutes? (empty = until restored)', '120');
+    try { await api('/api/changes', { kind: 'exempt_device', mac: b.dataset.exempt, durationMinutes: mins ? Number(mins) : null }); load(); } catch (e) { fail(e); }
+  }));
+  app.querySelectorAll('[data-strict]').forEach((b) => (b.onclick = async () => { try { await api(`/api/devices/${encodeURIComponent(b.dataset.strict)}/strict`, {}); load(); } catch (e) { fail(e); } }));
+}
+const devName = (mac) => (status.devices.find((d) => d.mac === mac) || {}).name || mac;
+
+load().catch(fail);
+setInterval(() => { if (status?.setupDone) load().catch(() => {}); }, 30000);
+</script>
+</body>
+</html>
