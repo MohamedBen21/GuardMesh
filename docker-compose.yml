@@ -1,0 +1,30 @@
+services:
+  # DNS filter + DHCP server. Host networking is required so it can serve DHCP and see device MAC addresses.
+  # Its admin UI listens on 127.0.0.1:3000 only (set during setup), with a random password nobody is told.
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: fg-adguard
+    network_mode: host
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./data/adguard/work:/opt/adguardhome/work
+      - ./data/adguard/conf:/opt/adguardhome/conf
+
+  # The setup wizard, partner key, delayed-disable logic and tamper watchdog.
+  guardian:
+    build: .
+    container_name: fg-guardian
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - adguardhome
+    environment:
+      PORT: "8080"
+      DATA_DIR: /data
+      ADGUARD_URL: http://127.0.0.1:3000
+      # HEARTBEAT_URL: https://hc-ping.com/your-uuid   # optional: partner is alerted if the box stops pinging
+    volumes:
+      - ./data/guardian:/data

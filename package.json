@@ -1,0 +1,22 @@
+{
+  "name": "focusguard-network",
+  "version": "0.1.0",
+  "description": "Network-level adult-content filter appliance (AdGuard Home + guardian service) with accountability-partner controls",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
