@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import type { Lang } from './i18n.js';
 
 export type Mode = 'self' | 'parental';
 export type ChangeKind = 'disable_all' | 'exempt_device';
@@ -35,7 +36,11 @@ export interface PartnerContact {
 export interface State {
   setupDone: boolean;
   mode: Mode;
+  /** language of alerts sent to the partner and of the activity log */
+  lang: Lang;
   delayMinutes: number;
+  /** true once the box's DHCP server was enabled (full mode); false = DNS-only mode */
+  dhcpEnabled: boolean;
   partnerKeyHash?: string;
   partner: PartnerContact;
   adguard?: { user: string; password: string };
@@ -47,7 +52,9 @@ export interface State {
 export const defaultState = (): State => ({
   setupDone: false,
   mode: 'self',
+  lang: 'en',
   delayMinutes: 24 * 60,
+  dhcpEnabled: false,
   partner: {},
   devices: {},
   changes: [],
