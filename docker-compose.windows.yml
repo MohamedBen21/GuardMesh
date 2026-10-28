@@ -1,0 +1,31 @@
+# TEST MODE for Windows / macOS (Docker Desktop). DNS filtering only: no DHCP, no device discovery by MAC.
+# Run:  docker compose -f docker-compose.windows.yml up -d --build
+# Wizard: http://localhost:8080   (skip the DHCP step, see README)
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: fg-adguard
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    volumes:
+      - ./data/adguard/work:/opt/adguardhome/work
+      - ./data/adguard/conf:/opt/adguardhome/conf
+
+  guardian:
+    build: .
+    container_name: fg-guardian
+    restart: unless-stopped
+    depends_on:
+      - adguardhome
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DATA_DIR: /data
+      ADGUARD_URL: http://adguardhome:3000
+      ADGUARD_WEB_BIND: 0.0.0.0
+      TZ: Africa/Algiers   # alerts show local time; change to your own timezone
+    volumes:
+      - ./data/guardian:/data

@@ -1,40 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Guardian } from '../src/guardian.js';
-import { Store, defaultState } from '../src/store.js';
 import { hashSecret, generatePartnerKey, verifySecret, Lockout } from '../src/auth.js';
-import type { AdGuardApi, Lease } from '../src/adguard.js';
+import { MIN, setup } from './helpers.js';
 
-class FakeApi implements AdGuardApi {
-  protection = true;
-  exempt = new Set<string>();
-  leases: Lease[] = [];
-  async isInstalled() { return true; }
-  async install() {}
-  async applyBaselinePolicy() {}
-  async getProtection() { return this.protection; }
-  async setProtection(e: boolean) { this.protection = e; }
-  async listLeases() { return this.leases; }
-  async enableDhcp() {}
-  async setExempt(mac: string, _n: string, on: boolean) { on ? this.exempt.add(mac) : this.exempt.delete(mac); }
-  async listExemptMacs() { return [...this.exempt]; }
-}
-
-const MIN = 60_000;
-
-function setup() {
-  const store = new Store('/tmp/fg-test-state.json');
-  store.save = async () => {}; // no disk in tests
-  store.state = { ...defaultState(), setupDone: true, delayMinutes: 60 };
-  const key = generatePartnerKey();
-  store.state.partnerKeyHash = hashSecret(key);
-  const api = new FakeApi();
-  const sent: string[] = [];
-  let t = 1_000_000;
-  const clock = { now: () => t };
-  const g = new Guardian(store, api, { send: async (m) => void sent.push(m) }, clock);
-  return { store, api, sent, g, key, advance: (ms: number) => (t += ms) };
-}
+const texts = (s: { text: string }[]) => s.map((m) => m.text);
 
 test('pausing protection waits for the delay, then auto-restores after its duration', async () => {
   const { g, api, advance } = setup();
@@ -75,7 +44,7 @@ test('tamper: protection switched off outside a window is re-enabled and reporte
   api.protection = false;
   await g.tick();
   assert.equal(api.protection, true);
-  assert.ok(sent.some((m) => m.includes('TAMPER')));
+  assert.ok(texts(sent).some((m) => m.includes('TAMPER')));
 });
 
 test('tamper: unauthorised exemptions are removed', async () => {
@@ -108,7 +77,7 @@ test('new devices are discovered as strict and the partner is told', async () =>
   api.leases = [{ mac: 'de:ad:be:ef:00:01', ip: '192.168.1.120', hostname: 'galaxy-s24' }];
   await g.tick();
   assert.equal(store.state.devices['de:ad:be:ef:00:01'].policy, 'strict');
-  assert.ok(sent.some((m) => m.includes('New device')));
+  assert.ok(texts(sent).some((m) => m.includes('New device') && m.includes('galaxy-s24')));
 });
 
 test('restoreNow ends every active change immediately', async () => {
@@ -119,6 +88,34 @@ test('restoreNow ends every active change immediately', async () => {
   assert.equal(api.protection, false);
   await g.restoreNow();
   assert.equal(api.protection, true);
+});
+
+test('alerts are readable (no internal names), carry a cancel button, and show the delay', async () => {
+  const { g, sent } = setup();
+  const r = await g.requestChange({ kind: 'disable_all', durationMinutes: 30 });
+  const m = sent[0];
+  assert.ok(!m.text.includes('disable_all') && !m.text.includes('Z'), m.text);
+  assert.match(m.text, /pause ALL protection/);
+  assert.match(m.text, /in 1 hour/);
+  assert.match(m.text, /30 minutes/);
+  assert.deepEqual(m.opts?.button, { id: r.id, labelKey: 'btn_cancel' });
+});
+
+test('an applied pause offers a "restore" button', async () => {
+  const { g, sent, advance } = setup();
+  const r = await g.requestChange({ kind: 'disable_all' });
+  advance(61 * MIN);
+  await g.tick();
+  const applied = sent.find((m) => m.text.includes('PAUSED'));
+  assert.ok(applied);
+  assert.deepEqual(applied!.opts?.button, { id: r.id, labelKey: 'btn_restore' });
+});
+
+test('alerts follow the configured language', async () => {
+  const { g, sent } = setup({ lang: 'fr' });
+  await g.requestChange({ kind: 'disable_all' });
+  assert.match(sent[0].text, /suspendre TOUTE la protection/);
+  assert.match(sent[0].text, /1 heure/);
 });
 
 test('auth: hashing, verification and lockout', () => {

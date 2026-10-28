@@ -25,6 +25,7 @@ services:
       PORT: "8080"
       DATA_DIR: /data
       ADGUARD_URL: http://127.0.0.1:3000
+      TZ: Africa/Algiers   # alerts show local time; change to your own timezone
       # HEARTBEAT_URL: https://hc-ping.com/your-uuid   # optional: partner is alerted if the box stops pinging
     volumes:
       - ./data/guardian:/data
