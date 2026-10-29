@@ -12,6 +12,9 @@ import { DEFAULT_PROVIDER, PROVIDERS, getProvider, type Provider } from './provi
 import { DEFAULT_TEST_DOMAINS, verifyFiltering } from './verify.js';
 import { IOS_STEPS, androidSteps, deviceScript, iosProfile, type Os } from './deviceScripts.js';
 import { manualGuide, manualUndoGuide } from './guide.js';
+import { HilinkDriver } from './hilink.js';
+import { applyWithBackup, undoFromBackup, latestBackup, type RunnerIO } from './runner.js';
+import { fingerprint, parseGateway, summarize, type Probe } from './database.js';
 import { mikrotikApply, mikrotikUndo, openwrtApply, openwrtUndo, runMikrotik, sshArgs } from './drivers.js';
 
 type Flags = Record<string, string | boolean>;
@@ -82,6 +85,7 @@ Usage:  npm run router -- <command> [options]
 Commands
   setup      Set the filtering DNS on your router (guided, or automatic for OpenWrt / MikroTik)
   device     Make a script/profile that sets the filtering DNS on ONE device (Windows, macOS, Linux, Android, iPhone)
+  detect     Find your router and say whether an automatic recipe exists for it
   verify     Check that filtering is really active on this computer
   undo       Remove the filtering DNS (router or device)
   providers  List the available filtering services
@@ -89,7 +93,9 @@ Commands
 
 Run a command without options and it asks you questions. Useful options:
   --provider <id>      cloudflare-families (default) | cleanbrowsing-family | cleanbrowsing-adult | opendns-familyshield
-  --router <type>      manual (default) | openwrt | mikrotik
+  --router <type>      manual (default) | huawei-hilink | openwrt | mikrotik
+  --backup <file>      undo: backup file to restore (default: the newest one in --backup-dir)
+  --backup-dir <dir>   where router backups are kept (default: ./focusguard-backups)
   --host <ip>          router address (openwrt / mikrotik)
   --user <name>        router login (default root for openwrt, admin for mikrotik)
   --password <pw>      MikroTik password (or set the ROUTER_PASSWORD environment variable)
@@ -134,6 +140,7 @@ async function cmdSetup(flags: Flags, undo = false) {
         'What kind of router do you have?',
         [
           { value: 'manual', label: 'A normal / ISP router (I will follow step-by-step instructions)' },
+          { value: 'huawei-hilink', label: 'Huawei 4G/5G HiLink router (automatic over its web API)  [UNTESTED]' },
           { value: 'openwrt', label: 'OpenWrt (automatic over SSH)  [experimental]' },
           { value: 'mikrotik', label: 'MikroTik RouterOS 7 (automatic over its REST API)  [experimental]' },
         ],
@@ -144,6 +151,28 @@ async function cmdSetup(flags: Flags, undo = false) {
   if (type === 'manual') {
     console.log('\n' + (undo ? manualUndoGuide() : manualGuide(provider!)) + '\n');
     if (!undo && provider && interactive && (await confirm('Run the check now (after you finished the steps)?', false))) await runVerify(provider, flags);
+    return;
+  }
+
+  if (type === 'huawei-hilink') {
+    const host = typeof flags.host === 'string' ? flags.host : await ask('Router address?', '192.168.8.1');
+    const user = typeof flags.user === 'string' ? flags.user : await ask('Router login?', 'admin');
+    const password = (typeof flags.password === 'string' ? flags.password : undefined) ?? process.env.ROUTER_PASSWORD ?? (await ask('Router password (typing is visible; never saved):'));
+    const backupDir = typeof flags['backup-dir'] === 'string' ? flags['backup-dir'] : path.join(process.cwd(), 'focusguard-backups');
+    const driver = new HilinkDriver(host);
+    console.log(`\nRecipe "${driver.id}" is ${driver.status.toUpperCase()}: ${driver.basis}\nIt can only change the DNS servers; your Wi-Fi, address range and lease time are re-sent unchanged. Everything is backed up first.\n`);
+    const io: RunnerIO = { log: (m) => console.log(m), confirm: (q) => confirm(q, false) };
+    const common = { host, user, password, dryRun: dry, yes: Boolean(flags.yes), settleMs: 8000 };
+    if (undo) {
+      const file = typeof flags.backup === 'string' ? flags.backup : fs.existsSync(backupDir) ? latestBackup(backupDir, host) : undefined;
+      if (!file) return console.error('No backup found. Use --backup <file>, or run "setup --router manual" and clear the DNS by hand.');
+      process.exitCode = (await undoFromBackup(driver, file, common, io)) ? 0 : 1;
+      return;
+    }
+    const servers = [...provider!.v4];
+    const r = await applyWithBackup(driver, servers, { ...common, backupDir }, io);
+    if (!r.ok) process.exitCode = 1;
+    else if (!dry && !flags['no-verify']) await runVerify(provider!, flags);
     return;
   }
 
@@ -185,8 +214,41 @@ async function cmdSetup(flags: Flags, undo = false) {
     return;
   }
 
-  console.error(`Unknown router type "${type}". Use manual, openwrt or mikrotik.`);
+  console.error(`Unknown router type "${type}". Use manual, huawei-hilink, openwrt or mikrotik.`);
   process.exitCode = 1;
+}
+
+async function cmdDetect(flags: Flags) {
+  let gateway = typeof flags.host === 'string' ? flags.host : undefined;
+  if (!gateway) {
+    try {
+      const out = process.platform === 'linux' ? fs.readFileSync('/proc/net/route', 'utf8') : spawnSync(process.platform === 'win32' ? 'route' : 'netstat', process.platform === 'win32' ? ['print', '-4'] : ['-rn'], { encoding: 'utf8' }).stdout;
+      gateway = parseGateway(process.platform, out);
+    } catch {
+      /* ask below */
+    }
+  }
+  gateway ??= await ask('Could not find the router automatically. Its address?', '192.168.1.1');
+  const probe: Probe = { gateway };
+  const get = async (p: string) => fetch(`http://${gateway}${p}`, { signal: AbortSignal.timeout(4000), redirect: 'follow' });
+  try {
+    const res = await get('/');
+    probe.status = res.status;
+    probe.server = res.headers.get('server') ?? undefined;
+    probe.body = (await res.text()).slice(0, 20000);
+    probe.title = /<title>([^<]*)<\/title>/i.exec(probe.body)?.[1];
+  } catch (e) {
+    console.log(`Could not open http://${gateway}/ (${(e as Error).message}). Are you on that router's Wi-Fi?`);
+  }
+  try {
+    const r = await get('/api/webserver/SesTokInfo');
+    probe.hilink = r.ok && /<TokInfo>|<token>/i.test(await r.text());
+  } catch {
+    /* not HiLink */
+  }
+  const d = fingerprint(probe);
+  console.log('\n' + summarize(d, gateway).join('\n') + '\n');
+  console.log('Nothing was changed and no password was used. To help add support for other routers, send the router model (not any passwords).\n');
 }
 
 async function cmdDevice(flags: Flags) {
@@ -255,6 +317,9 @@ async function main() {
   switch (cmd) {
     case 'setup':
       await cmdSetup(flags);
+      break;
+    case 'detect':
+      await cmdDetect(flags);
       break;
     case 'device':
       await cmdDevice(flags);
