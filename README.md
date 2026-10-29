@@ -194,7 +194,34 @@ npm run router -- setup
 - **OpenWrt** (`--router openwrt --host 192.168.1.1`): changes the router's DNS over SSH. *Experimental.*
 - **MikroTik RouterOS 7** (`--router mikrotik --host 192.168.88.1 --user admin`): changes it through the REST API
   (enable the `www` service first). *Experimental.*
+- **Huawei 4G/5G HiLink routers** (`--router huawei-hilink --host 192.168.8.1`): changes the DNS over the router's web
+  API. **Untested on real hardware** (see below).
 - Add `--dry-run` to see exactly what would be done without changing anything.
+
+### Not sure what router you have?
+
+```
+npm run router -- detect
+```
+
+Finds your router's address, looks at its login page (no password is used, nothing is changed) and tells you whether an
+automatic recipe exists. `src/router/database.ts` lists known router families and the usual problems (for example, boxes
+that lock the DNS field). That list is **leads from public research, not verified**, and holds no passwords.
+
+### How automatic recipes stay safe
+
+Every automatic recipe runs through the same runner: it reads the current settings, **saves a backup first**, shows the
+before/after, asks for confirmation, applies, then **reads the router back** to confirm the change stuck. Your router
+password is used once and never written to disk. Undo with
+`npm run router -- undo --router huawei-hilink --host <ip>` (uses the newest backup in `./focusguard-backups`).
+Each recipe carries a status: **verified** (run on a real device), **community** (reported working by users),
+**untested** (written from documentation or open-source code only).
+
+### Adding or testing a router recipe
+
+A recipe is a small driver (`login`, `read`, `dnsOf`, `withDns`, `write`, `logout`; see `src/router/runner.ts`) plus a
+mock router in `test/` that replays the protocol. Run `detect` and `setup --dry-run` on your router and report what
+happened (model, firmware, the output; never passwords) so it can move from *untested* to *community*/*verified*.
 
 **Lock it.** Ask your **partner** to set a *new* router admin password and keep it. Without this, anyone in the house
 can undo the change in a minute. This one step is what turns a filter into accountability.
@@ -294,7 +321,7 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
 # Status: what is tested and what is not
 
 **Tested**
-- 39 automated tests: delays, approvals, tamper revert, device discovery, partner key and lockout, settings
+- 54 automated tests: delays, approvals, tamper revert, device discovery, partner key and lockout, settings
   validation, Telegram bot (with a simulated Telegram), alert wording and languages, router-mode scripts and logic.
 - Against a **real AdGuard Home** (Docker on Windows, DNS-only mode): setup, adult blocklists, DoH blocking,
   delayed pause, partner-key approval, wrong-key refusal, instant restore, tamper watchdog, and Telegram alerts.
@@ -305,14 +332,15 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
 - Telegram **Cancel buttons** and `/status`, `/restore` on the real Telegram service (only simulated so far).
 - The OpenWrt and MikroTik drivers on real routers, the Windows/Mac/Linux scripts on real machines, the
   iPhone profile and Android steps on real phones, and the `verify` command on a real filtered network.
-- Any particular ISP router: no model-specific driver exists yet.
+- The **Huawei HiLink** recipe on a real router: it passes 15 tests against a mock built from the open-source `huawei-lte-api` client, nothing more.
+- No recipe yet for ZTE, Huawei fiber ONT, Nokia or TP-Link boxes: they need captured login/settings pages from real devices.
 
 # Roadmap
 
 1. Test on a real Pi with a spare router; fix API drift; add integration tests against an AdGuard container.
 2. A prebuilt Pi image (nothing to install).
 3. nftables rules on the box: block DNS-over-TLS (853), known DoH servers, optionally VPN protocols.
-4. Router drivers for popular ISP routers (needs the exact models).
+4. More router recipes (ZTE, Huawei ONT, Nokia, TP-Link): need real captured pages or community contributions.
 5. Router-mode `verify` on a schedule with a Telegram alert when filtering stops.
 6. French and Arabic for the router-mode tool; reviewed translations.
 7. Partner web view (read-only log, approve or deny from anywhere).

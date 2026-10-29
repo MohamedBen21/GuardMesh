@@ -1,6 +1,6 @@
 {
   "name": "focusguard-network",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Network-level adult-content filter: a box version (AdGuard Home + guardian with accountability partner) and a no-hardware router mode",
   "type": "module",
   "license": "MIT",
