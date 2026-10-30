@@ -204,9 +204,7 @@ npm run router -- setup
 
 Most routers are the same idea with different menu names: open the router address, log in with the sticker
 password, find the DNS fields (usually under LAN / DHCP), type the two addresses, save, then have your partner change
-the admin password. Only the address and the menu names change. (The GIF is built from sanitised screenshots by
-`tools/make-router-gif.py`; the typed values are drawn on top as an example, and nothing was saved on the router
-to make it.)
+the admin password. Only the address and the menu names change.
 
 ### Not sure what router you have?
 
