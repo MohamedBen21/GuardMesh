@@ -198,6 +198,16 @@ npm run router -- setup
   API. **Untested on real hardware** (see below).
 - Add `--dry-run` to see exactly what would be done without changing anything.
 
+### What it looks like (example: ZTE F660)
+
+![Walkthrough: log in, open Network > LAN > DHCP Server, type the two DNS addresses, submit, lock it, verify](docs/router-walkthrough-zte-f660.gif)
+
+Most routers are the same idea with different menu names: open the router address, log in with the sticker
+password, find the DNS fields (usually under LAN / DHCP), type the two addresses, save, then have your partner change
+the admin password. Only the address and the menu names change. (The GIF is built from sanitised screenshots by
+`tools/make-router-gif.py`; the typed values are drawn on top as an example, and nothing was saved on the router
+to make it.)
+
 ### Not sure what router you have?
 
 ```
