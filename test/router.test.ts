@@ -106,3 +106,15 @@ test('manual guide contains the DNS values and the partner-password step', () =>
   assert.match(g, /2606:4700:4700::1113/);
   assert.match(manualGuide(getProvider('opendns-familyshield')), /no IPv6 addresses/);
 });
+
+import { BRAND_GUIDES, brandGuideText, lockedGuideText } from '../src/router/brandGuides.js';
+import { ROUTERS } from '../src/router/database.js';
+test('brand guides: every manual-only router in the database has notes, no passwords, marked unverified', () => {
+  for (const r of ROUTERS.filter((x) => !x.recipe)) assert.ok(BRAND_GUIDES.some((b) => b.id === r.id), `missing guide for ${r.id}`);
+  for (const b of BRAND_GUIDES) {
+    const t = brandGuideText(b);
+    assert.match(t, /UNVERIFIED/);
+    assert.doesNotMatch(t, /password\s*[:=]\s*\S+/i);
+  }
+  assert.match(lockedGuideText(), /behind the ISP box/);
+});

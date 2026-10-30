@@ -208,6 +208,18 @@ Finds your router's address, looks at its login page (no password is used, nothi
 automatic recipe exists. `src/router/database.ts` lists known router families and the usual problems (for example, boxes
 that lock the DNS field). That list is **leads from public research, not verified**, and holds no passwords.
 
+### No recipe for your router? Brand notes
+
+```
+npm run router -- setup --router manual --brand zte-f6xx      # or huawei-ont, nokia, tplink, fritzbox, livebox, xfinity, att
+npm run router -- setup --router manual --brand locked        # "my router won't let me change DNS"
+```
+
+Prints the generic steps plus where the DNS fields usually are on that brand, login notes and known traps. These notes
+are **unverified** (written from general knowledge, not checked on devices; menus change with firmware and ISP) and live in
+`src/router/brandGuides.ts`: corrections are welcome. The "locked" page lists what to do when the ISP hides the field
+(your own router behind the ISP box, the Box, per-device scripts).
+
 ### How automatic recipes stay safe
 
 Every automatic recipe runs through the same runner: it reads the current settings, **saves a backup first**, shows the
