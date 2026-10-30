@@ -11,6 +11,7 @@ import path from 'node:path';
 import { DEFAULT_PROVIDER, PROVIDERS, getProvider, type Provider } from './providers.js';
 import { DEFAULT_TEST_DOMAINS, verifyFiltering } from './verify.js';
 import { IOS_STEPS, androidSteps, deviceScript, iosProfile, type Os } from './deviceScripts.js';
+import { BRAND_GUIDES, brandGuideText, getBrand, lockedGuideText } from './brandGuides.js';
 import { manualGuide, manualUndoGuide } from './guide.js';
 import { HilinkDriver } from './hilink.js';
 import { applyWithBackup, undoFromBackup, latestBackup, type RunnerIO } from './runner.js';
@@ -94,6 +95,7 @@ Commands
 Run a command without options and it asks you questions. Useful options:
   --provider <id>      cloudflare-families (default) | cleanbrowsing-family | cleanbrowsing-adult | opendns-familyshield
   --router <type>      manual (default) | huawei-hilink | openwrt | mikrotik
+  --brand <id>         manual guide: add notes for your router brand: zte-f6xx | huawei-ont | nokia | tplink | fritzbox | livebox | xfinity | att | locked
   --backup <file>      undo: backup file to restore (default: the newest one in --backup-dir)
   --backup-dir <dir>   where router backups are kept (default: ./focusguard-backups)
   --host <ip>          router address (openwrt / mikrotik)
@@ -150,6 +152,12 @@ async function cmdSetup(flags: Flags, undo = false) {
 
   if (type === 'manual') {
     console.log('\n' + (undo ? manualUndoGuide() : manualGuide(provider!)) + '\n');
+    if (!undo && typeof flags.brand === 'string') {
+      const b = getBrand(flags.brand);
+      if (flags.brand === 'locked') console.log(lockedGuideText() + '\n');
+      else if (b) console.log(brandGuideText(b) + '\n');
+      else console.log(`Unknown brand "${flags.brand}". Available: ${BRAND_GUIDES.map((x) => x.id).join(', ')}, locked\n`);
+    }
     if (!undo && provider && interactive && (await confirm('Run the check now (after you finished the steps)?', false))) await runVerify(provider, flags);
     return;
   }
