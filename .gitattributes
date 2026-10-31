@@ -1,0 +1,4 @@
+# keep line endings right for files people download and run
+*.cmd text eol=crlf
+*.sh text eol=lf
+*.command text eol=lf

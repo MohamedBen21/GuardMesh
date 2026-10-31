@@ -26,6 +26,43 @@ In both versions the strongest ingredient is the same: **a partner who holds the
 
 ---
 
+## Protect this computer in one click
+
+No router, no box, no install: download the file for your system and open it. It sets the family filter
+(Cloudflare for Families) on **this computer only**, so it stays protected on any Wi-Fi, also away from home.
+
+| Your system | Protect | Remove the protection | How to open it |
+|---|---|---|---|
+| **Windows** | [Protect this computer](downloads/focusguard-protect-windows.cmd?raw=true) | [Remove](downloads/focusguard-remove-windows.cmd?raw=true) | Double-click the file |
+| **Mac** | [Protect this Mac](downloads/focusguard-protect-macos.command?raw=true) | [Remove](downloads/focusguard-remove-macos.command?raw=true) | Terminal: `bash ~/Downloads/focusguard-protect-macos.command` |
+| **Linux** | [Protect this computer](downloads/focusguard-protect-linux.sh?raw=true) | [Remove](downloads/focusguard-remove-linux.sh?raw=true) | Terminal: `bash ~/Downloads/focusguard-protect-linux.sh` |
+| **Android** | One setting: *Private DNS* → `family.cloudflare-dns.com` | Set Private DNS to *Automatic* | Settings → Network & internet |
+| **iPhone / iPad** | [Profile](downloads/focusguard-protect-iphone.mobileconfig?raw=true) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
+
+> If a link shows the file as text instead of downloading it, right-click it and choose **Save link as**. Browsers
+> treat files from GitHub as plain text. If you run the Box, its dashboard has the same buttons and downloads
+> directly (card **Protect this computer**).
+
+**The warnings you may see are normal.** The files are not signed by a company (that costs money every year), so
+operating systems are careful with them:
+
+- **Browser:** "is not commonly downloaded" / "could be harmful" → choose **Keep**.
+- **Windows:** a blue "Windows protected your PC" window → **More info → Run anyway**. Then **Yes** on "Do you want
+  to allow this app to make changes?" (changing DNS needs administrator rights).
+- **Mac:** "cannot be opened because it is from an unidentified developer" → run it from the Terminal as shown above.
+- **Linux / Mac:** the command asks for your password (to change the network settings).
+
+**Do not trust a file you cannot read.** Everything here is plain text: open any file in Notepad and read it. The
+Windows file runs the PowerShell script embedded in it (it is the same code as `npm run router -- device`, which
+writes a readable `.ps1`). It only sets DNS servers; it installs nothing and contacts nobody.
+
+**To undo it**, use the *Remove* link (it sets DNS back to automatic). Anyone using the computer can run it, so this
+is friction, not a lock. A real lock needs the Box and a partner.
+
+These files are regenerated with `npm run build:downloads`. The tests fail if they get out of date.
+
+---
+
 ## What this can and cannot stop
 
 It **raises the bar**; it is not a lock.
@@ -110,7 +147,7 @@ Open the wizard address from any phone or computer on your Wi-Fi. Pick **English
 ### Telegram setup (2 minutes)
 
 1. In Telegram open **@BotFather**, send `/newbot`, pick a name and a username that ends in `bot`
-   (for example `mohamed_focusguard_bot`). BotFather replies with a **token**: keep it secret.
+   (for example `my_focusguard_bot`). BotFather replies with a **token**: keep it secret.
 2. **Choose a neutral bot name** (use `/setname`, e.g. "FocusGuard"). Alerts appear on the lock screen.
 3. The **partner** opens the new bot and presses **Start**. A bot cannot message someone who never started it.
 4. The partner sends any message to **@userinfobot** to learn their numeric **chat ID**.
@@ -237,6 +274,8 @@ password is used once and never written to disk. Undo with
 Each recipe carries a status: **verified** (run on a real device), **community** (reported working by users),
 **untested** (written from documentation or open-source code only).
 
+Verified so far: manual setup and `verify` on the **ZTE F660**, the **Windows** one-computer script, and the **Box** (with MAC device detection) on a spare PC.
+
 ### Adding or testing a router recipe
 
 A recipe is a small driver (`login`, `read`, `dnsOf`, `withDns`, `write`, `logout`; see `src/router/runner.ts`) plus a
@@ -340,20 +379,30 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
 
 # Status: what is tested and what is not
 
-**Tested**
-- 54 automated tests: delays, approvals, tamper revert, device discovery, partner key and lockout, settings
-  validation, Telegram bot (with a simulated Telegram), alert wording and languages, router-mode scripts and logic.
-- Against a **real AdGuard Home** (Docker on Windows, DNS-only mode): setup, adult blocklists, DoH blocking,
+**Tested by the author on real hardware (October 2026)**
+- **The Box**, running 24/7 on a spare PC: it worked as expected, including **DHCP and device detection by MAC address**.
+- **Telegram alerts with the Cancel button** on the real Telegram service: the partner can cancel a pending change from the alert.
+- **Android phone** (old device, Private DNS with `family.cloudflare-dns.com`) and **iPhone** (new device): Cloudflare Family DNS filtering worked on both.
+- **iPhone**: both setting the DNS by hand and installing the generated `.mobileconfig` profile worked.
+- **The one-computer scripts for macOS and Linux**: tested by a friend of the author, who reported they work (no model or version recorded).
+- **Telegram commands** `/status`, `/restore` and `/help` on the real Telegram service: all work.
+- **The one-computer script** (`device`, Windows): applied filtering to the PC it was run on and worked.
+- **The manual router method on a ZTE F660**, following the guide: an adult site was blocked in the browser, and the `verify` command reported **ACTIVE**. The ZTE F660 guide is marked *verified*.
+- Earlier, against a **real AdGuard Home** (Docker on Windows, DNS-only mode): setup, adult blocklists, DoH blocking,
   delayed pause, partner-key approval, wrong-key refusal, instant restore, tamper watchdog, and Telegram alerts.
 - The wizard in a real browser in all three languages, including right-to-left Arabic.
+- 59 automated tests: delays, approvals, tamper revert, device discovery, partner key and lockout, settings
+  validation, Telegram bot (with a simulated Telegram), alert wording and languages, router-mode scripts and logic,
+  the Huawei HiLink recipe against a mock router.
 
 **Not tested yet**
-- DHCP and device discovery by MAC, trusted devices, the "box restarted" alert, on real Linux or a Pi.
-- Telegram **Cancel buttons** and `/status`, `/restore` on the real Telegram service (only simulated so far).
-- The OpenWrt and MikroTik drivers on real routers, the Windows/Mac/Linux scripts on real machines, the
-  iPhone profile and Android steps on real phones, and the `verify` command on a real filtered network.
+- The new one-click files and the dashboard card **Protect this computer** on real machines. They only wrap the PowerShell / shell scripts that were tested; the Windows `.cmd` launcher (self-elevation + embedded script) is checked by tests and in a real browser (download works), but has not yet been run on Windows.
+- The OpenWrt and MikroTik drivers on real routers.
 - The **Huawei HiLink** recipe on a real router: it passes 15 tests against a mock built from the open-source `huawei-lte-api` client, nothing more.
-- No recipe yet for ZTE, Huawei fiber ONT, Nokia or TP-Link boxes: they need captured login/settings pages from real devices.
+- Other router brands. The ZTE F660 is the only one confirmed so far; the notes for ZTE (other models), Huawei fiber, Nokia, TP-Link,
+  FRITZ!Box and the rest are written from general knowledge and marked *unverified*.
+
+Tried it on your hardware? Tell us the model and what happened (never passwords) so it can be marked *verified*.
 
 # Roadmap
 
@@ -367,4 +416,9 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
 
 # License
 
-MIT. Use it to help people, and tell them what it does.
+MIT (see `LICENSE`). Use it to help people, and tell them what it does.
+
+*Disclaimer:* FocusGuard Network is an independent project. It is not made by, endorsed by or affiliated with
+Cloudflare, CleanBrowsing, OpenDNS/Cisco, AdGuard, Telegram, ZTE, Huawei, MikroTik, OpenWrt, TP-Link, Nokia, Apple,
+Google, Microsoft or any internet provider. Those names are trademarks of their owners and are used only to say which
+service or product something works with. The software is provided as is, without warranty.
