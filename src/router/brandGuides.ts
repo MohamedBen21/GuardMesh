@@ -1,5 +1,5 @@
 /**
- * Brand-specific hints for the manual router guide. UNVERIFIED: written from general knowledge of these product
+ * Brand-specific hints for the manual router guide. UNVERIFIED unless `verifiedOn` is set: written from general knowledge of these product
  * families, not checked on real devices. Menu names change with firmware and with the ISP's customisation, so every
  * hint is phrased as "usually". Improve them by sending corrections (model, firmware, exact menu path; never passwords).
  */
@@ -15,6 +15,8 @@ export interface BrandGuide {
   traps: string[];
   /** true when the DNS field is commonly locked by the ISP */
   oftenLocked: boolean;
+  /** models on which these steps were actually followed and worked */
+  verifiedOn?: string[];
 }
 
 export const BRAND_GUIDES: BrandGuide[] = [
@@ -24,6 +26,7 @@ export const BRAND_GUIDES: BrandGuide[] = [
     account: 'Many ISPs give customers a limited account; the advanced menus may only show with a different account that the ISP controls. Do not guess passwords: ask the ISP, or use the locked-DNS options.',
     traps: ['Set both the LAN/DHCP DNS and the WAN DNS if both exist.', 'The ISP can push its own settings back (remote management) and undo your change after a reboot: run verify again the next day.'],
     oftenLocked: true,
+    verifiedOn: ['ZTE F660 (Algerian ISP build; tested by the author, Oct 2026, site blocked and verify ACTIVE: Network > LAN > DHCP Server, DNS Server1/Server2)'],
   },
   {
     id: 'huawei-ont', name: 'Huawei fiber box (HG8145V5 / HG8245H / HG8546 and similar)', address: 'http://192.168.100.1 (sometimes 192.168.1.1)',
@@ -82,7 +85,9 @@ export function getBrand(id: string): BrandGuide | undefined {
 
 export function brandGuideText(b: BrandGuide): string {
   return [
-    `BRAND NOTES — ${b.name}  [UNVERIFIED: written from general knowledge, menus differ by firmware and ISP]`,
+    b.verifiedOn?.length
+      ? `BRAND NOTES — ${b.name}  [VERIFIED on: ${b.verifiedOn.join('; ')}. Other models: unverified, menus differ by firmware and ISP]`
+      : `BRAND NOTES — ${b.name}  [UNVERIFIED: written from general knowledge, menus differ by firmware and ISP]`,
     ``,
     `Admin page : ${b.address}`,
     `DNS fields usually here:`,

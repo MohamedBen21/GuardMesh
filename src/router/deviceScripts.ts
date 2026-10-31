@@ -1,4 +1,10 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
+
+/** Same input, same UUID: reinstalling the profile replaces it instead of adding a second one, and builds are reproducible. */
+function stableUuid(seed: string): string {
+  const h = createHash('sha1').update('focusguard:' + seed).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`.toUpperCase();
+}
 import type { Provider } from './providers.js';
 
 export type Os = 'windows' | 'macos' | 'linux';
@@ -105,7 +111,7 @@ export function androidSteps(p: Provider): string {
   ].join('\n');
 }
 
-/** Configuration profile for iPhone / iPad / Mac (DNS over HTTPS). Not tested on a real device yet. */
+/** Configuration profile for iPhone / iPad / Mac (DNS over HTTPS). Tested on a real iPhone by the author. */
 export function iosProfile(p: Provider): GeneratedScript {
   if (!p.dohUrl) throw new Error(`${p.name} has no DNS-over-HTTPS address, so it cannot be used as a profile. Choose another provider.`);
   const name = `FocusGuard DNS (${p.id})`;
@@ -125,7 +131,7 @@ export function iosProfile(p: Provider): GeneratedScript {
       <key>PayloadDisplayName</key><string>${name}</string>
       <key>PayloadIdentifier</key><string>com.focusguard.dns.payload.${p.id}</string>
       <key>PayloadType</key><string>com.apple.dnsSettings.managed</string>
-      <key>PayloadUUID</key><string>${randomUUID().toUpperCase()}</string>
+      <key>PayloadUUID</key><string>${stableUuid(p.id + ':payload')}</string>
       <key>PayloadVersion</key><integer>1</integer>
     </dict>
   </array>
@@ -134,7 +140,7 @@ export function iosProfile(p: Provider): GeneratedScript {
   <key>PayloadIdentifier</key><string>com.focusguard.dns.${p.id}</string>
   <key>PayloadRemovalDisallowed</key><false/>
   <key>PayloadType</key><string>Configuration</string>
-  <key>PayloadUUID</key><string>${randomUUID().toUpperCase()}</string>
+  <key>PayloadUUID</key><string>${stableUuid(p.id + ':profile')}</string>
   <key>PayloadVersion</key><integer>1</integer>
 </dict>
 </plist>
@@ -148,5 +154,47 @@ export const IOS_STEPS = [
   '  2. Settings → "Profile Downloaded" → Install → enter the passcode.',
   '  3. Settings → General → VPN, DNS & Device Management → DNS → select the FocusGuard profile.',
   'To undo: remove the profile in Settings → General → VPN, DNS & Device Management.',
-  'Note: the person can remove it again, so ask your partner to check it from time to time. Not yet tested on a real device.',
+  'Note: the person can remove it again, so ask your partner to check it from time to time. Tested on a real iPhone by the author.',
 ].join('\n');
+
+/**
+ * Windows launcher: ONE double-clickable .cmd that asks for administrator permission by itself (the normal Windows
+ * "Do you want to allow this app to make changes?" window) and then runs the PowerShell script above.
+ * The PowerShell code is embedded (-EncodedCommand), so there is a single file to download.
+ */
+export function windowsLauncher(p: Provider, action: 'apply' | 'undo'): GeneratedScript {
+  const ps = deviceScript('windows', p, action).content;
+  const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+  const what = action === 'apply' ? 'turn filtering ON for this computer' : 'turn filtering OFF again for this computer';
+  const content = [
+    '@echo off',
+    `rem FocusGuard: ${what} (${action === 'apply' ? p.name : 'back to automatic DNS'}).`,
+    'rem Source: the same PowerShell script as focusguard-dns-windows-' + action + '.ps1 (embedded below).',
+    'net session >nul 2>&1',
+    'if %errorlevel% neq 0 (',
+    '  echo Asking Windows for administrator permission...',
+    `  powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"`,
+    '  exit /b',
+    ')',
+    `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
+    'echo.',
+    'pause',
+    '',
+  ].join('\r\n');
+  return { filename: `focusguard-${action === 'apply' ? 'protect' : 'remove'}-windows.cmd`, content };
+}
+
+export type DownloadOs = 'windows' | 'macos' | 'linux' | 'ios';
+export const DOWNLOAD_OS: DownloadOs[] = ['windows', 'macos', 'linux', 'ios'];
+
+/** The file a "Protect this computer" / "Remove protection" button downloads. */
+export function deviceDownload(os: DownloadOs, p: Provider, action: 'apply' | 'undo'): GeneratedScript & { mime: string } {
+  if (os === 'windows') return { ...windowsLauncher(p, action), mime: 'application/octet-stream' };
+  if (os === 'ios') {
+    if (action === 'undo') throw new Error('On iPhone/iPad, remove the profile in Settings → General → VPN, DNS & Device Management.');
+    return { ...iosProfile(p), mime: 'application/x-apple-aspen-config' };
+  }
+  const s = deviceScript(os, p, action);
+  const filename = `focusguard-${action === 'apply' ? 'protect' : 'remove'}-${os}.${os === 'macos' ? 'command' : 'sh'}`;
+  return { filename, content: s.content, mime: 'application/octet-stream' };
+}
