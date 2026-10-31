@@ -33,13 +33,13 @@ No router, no box, no install: download the file for your system and open it. It
 
 | Your system | Protect | Remove the protection | How to open it |
 |---|---|---|---|
-| **Windows** | [Protect this computer](downloads/focusguard-protect-windows.cmd?raw=true) | [Remove](downloads/focusguard-remove-windows.cmd?raw=true) | Double-click the file |
-| **Mac** | [Protect this Mac](downloads/focusguard-protect-macos.command?raw=true) | [Remove](downloads/focusguard-remove-macos.command?raw=true) | Terminal: `bash ~/Downloads/focusguard-protect-macos.command` |
-| **Linux** | [Protect this computer](downloads/focusguard-protect-linux.sh?raw=true) | [Remove](downloads/focusguard-remove-linux.sh?raw=true) | Terminal: `bash ~/Downloads/focusguard-protect-linux.sh` |
+| **Windows** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-remove-windows.cmd) | Double-click the file |
+| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-macos.command) | [Remove](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-remove-macos.command) | Terminal: `bash ~/Downloads/focusguard-protect-macos.command` |
+| **Linux** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-remove-linux.sh) | Terminal: `bash ~/Downloads/focusguard-protect-linux.sh` |
 | **Android** | One setting: *Private DNS* → `family.cloudflare-dns.com` | Set Private DNS to *Automatic* | Settings → Network & internet |
-| **iPhone / iPad** | [Profile](downloads/focusguard-protect-iphone.mobileconfig?raw=true) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
+| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
 
-> If a link shows the file as text instead of downloading it, right-click it and choose **Save link as**. Browsers
+> If a link shows the file as text instead of downloading it, right-click it and choose **Save link as**. (While the repository is private, these links only work when you are signed in to GitHub with access to it.) Browsers
 > treat files from GitHub as plain text. If you run the Box, its dashboard has the same buttons and downloads
 > directly (card **Protect this computer**).
 
@@ -386,6 +386,7 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
 - **iPhone**: both setting the DNS by hand and installing the generated `.mobileconfig` profile worked.
 - **The one-computer scripts for macOS and Linux**: tested by a friend of the author, who reported they work (no model or version recorded).
 - **Telegram commands** `/status`, `/restore` and `/help` on the real Telegram service: all work.
+- **The one-click files** `focusguard-protect-windows.cmd` (self-elevating launcher) and `focusguard-protect-linux.sh`: both worked on the author's computers.
 - **The one-computer script** (`device`, Windows): applied filtering to the PC it was run on and worked.
 - **The manual router method on a ZTE F660**, following the guide: an adult site was blocked in the browser, and the `verify` command reported **ACTIVE**. The ZTE F660 guide is marked *verified*.
 - Earlier, against a **real AdGuard Home** (Docker on Windows, DNS-only mode): setup, adult blocklists, DoH blocking,
@@ -396,7 +397,7 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
   the Huawei HiLink recipe against a mock router.
 
 **Not tested yet**
-- The new one-click files and the dashboard card **Protect this computer** on real machines. They only wrap the PowerShell / shell scripts that were tested; the Windows `.cmd` launcher (self-elevation + embedded script) is checked by tests and in a real browser (download works), but has not yet been run on Windows.
+- The dashboard card **Protect this computer** on real machines (the download itself works in a real browser; the files it hands out are the ones tested above).
 - The OpenWrt and MikroTik drivers on real routers.
 - The **Huawei HiLink** recipe on a real router: it passes 15 tests against a mock built from the open-source `huawei-lte-api` client, nothing more.
 - Other router brands. The ZTE F660 is the only one confirmed so far; the notes for ZTE (other models), Huawei fiber, Nokia, TP-Link,
