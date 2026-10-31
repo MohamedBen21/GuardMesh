@@ -6,6 +6,8 @@ import { Lockout, generatePartnerKey, generatePassword, hashSecret, verifySecret
 import type { Mode, PartnerContact, Store } from './store.js';
 import { normMac } from './util.js';
 import { isLang, t, type Lang } from './i18n.js';
+import { DEFAULT_PROVIDER, getProvider } from './router/providers.js';
+import { DOWNLOAD_OS, deviceDownload, type DownloadOs } from './router/deviceScripts.js';
 
 export const MIN_DELAY_MINUTES = 15;
 
@@ -73,6 +75,26 @@ export function buildApp(d: AppDeps) {
     }
     return true;
   }
+
+  // "Protect this computer" / "Remove protection": a script for the visitor's own computer. Nothing secret is in it,
+  // and the browser can only download it: the person must open it themselves.
+  app.get('/api/device-script', wrap(async (req, res) => {
+    const os = String(req.query.os ?? '') as DownloadOs;
+    const action = req.query.action === 'undo' ? 'undo' : 'apply';
+    if (!DOWNLOAD_OS.includes(os)) {
+      res.status(400).json({ error: 'Unknown system. Use windows, macos, linux or ios.' });
+      return;
+    }
+    try {
+      const f = deviceDownload(os, getProvider(DEFAULT_PROVIDER), action);
+      res.setHeader('Content-Type', f.mime);
+      res.setHeader('Content-Disposition', `attachment; filename="${f.filename}"`);
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(f.content);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
+    }
+  }));
 
   app.get('/api/status', wrap(async (_req, res) => {
     const st = s().setupDone ? await guardian.status() : { protection: null, changes: [] };
