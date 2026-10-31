@@ -33,15 +33,17 @@ No router, no box, no install: download the file for your system and open it. It
 
 | Your system | Protect | Remove the protection | How to open it |
 |---|---|---|---|
-| **Windows** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-remove-windows.cmd) | Double-click the file |
-| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-macos.command) | [Remove](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-remove-macos.command) | Terminal: `bash ~/Downloads/focusguard-protect-macos.command` |
-| **Linux** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-remove-linux.sh) | Terminal: `bash ~/Downloads/focusguard-protect-linux.sh` |
+| **Windows** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-remove-windows.cmd) | Double-click the file |
+| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-macos.command) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-remove-macos.command) | Terminal: `bash ~/Downloads/focusguard-protect-macos.command` |
+| **Linux** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-remove-linux.sh) | Terminal: `bash ~/Downloads/focusguard-protect-linux.sh` |
 | **Android** | One setting: *Private DNS* → `family.cloudflare-dns.com` | Set Private DNS to *Automatic* | Settings → Network & internet |
-| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/focusGuard-network/raw/main/downloads/focusguard-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
+| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
 
-> If a link shows the file as text instead of downloading it, right-click it and choose **Save link as**. (While the repository is private, these links only work when you are signed in to GitHub with access to it.) Browsers
-> treat files from GitHub as plain text. If you run the Box, its dashboard has the same buttons and downloads
-> directly (card **Protect this computer**).
+> The files are attached to the latest [release](https://github.com/MohamedBen21/focusGuard-network/releases/latest), so
+> the links download directly. You can read every file first in the
+> [`downloads/`](https://github.com/MohamedBen21/focusGuard-network/tree/main/downloads) folder. On an iPhone, a
+> download from the web may not offer to install the profile: use AirDrop, or the dashboard of the Box. If you run the
+> Box, its dashboard has the same buttons (card **Protect this computer**).
 
 **The warnings you may see are normal.** The files are not signed by a company (that costs money every year), so
 operating systems are careful with them:
@@ -59,7 +61,8 @@ writes a readable `.ps1`). It only sets DNS servers; it installs nothing and con
 **To undo it**, use the *Remove* link (it sets DNS back to automatic). Anyone using the computer can run it, so this
 is friction, not a lock. A real lock needs the Box and a partner.
 
-These files are regenerated with `npm run build:downloads`. The tests fail if they get out of date.
+These files are regenerated with `npm run build:downloads`; the tests fail if they get out of date. To publish new
+ones, push a version tag (`git tag v0.4.3 && git push origin v0.4.3`): a GitHub Action attaches them to a release.
 
 ---
 

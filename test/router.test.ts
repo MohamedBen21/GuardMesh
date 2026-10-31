@@ -154,3 +154,10 @@ test('iPhone profile is reproducible (stable UUIDs)', () => {
   const cf = gp('cloudflare-families');
   assert.equal(deviceDownload('ios', cf, 'apply').content, deviceDownload('ios', cf, 'apply').content);
 });
+
+test('README download links point to files that exist in downloads/', () => {
+  const readme = fs.readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const names = [...readme.matchAll(/releases\/latest\/download\/([\w.-]+)/g)].map((m) => m[1]);
+  assert.ok(names.length >= 7);
+  for (const n of names) assert.ok(fs.existsSync(new URL(`../downloads/${n}`, import.meta.url)), `README links to missing file ${n}`);
+});
