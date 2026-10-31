@@ -165,6 +165,12 @@ function renderWizard() {
 /* ---------- Dashboard ---------- */
 const devName = (mac) => (status.devices.find((d) => d.mac === mac) || {}).name || mac;
 
+function detectOs() {
+  const u = navigator.userAgent;
+  return /android/i.test(u) ? 'android' : /iphone|ipad|ipod/i.test(u) ? 'ios' : /windows/i.test(u) ? 'windows' : /mac/i.test(u) ? 'macos' : 'linux';
+}
+let pcOs = detectOs();
+
 function renderDash() {
   const on = status.protection !== false;
   const langOpts = Object.entries(LANG_NAMES).map(([k, n]) => `<option value="${k}" ${status.lang === k ? 'selected' : ''}>${n}</option>`).join('');
@@ -189,6 +195,13 @@ function renderDash() {
       <div><span class="pill ${d.policy === 'strict' ? 'ok' : 'off'}">${d.policy === 'strict' ? t('d_filtered') : t('d_unfiltered')}</span>
       ${d.policy === 'strict' ? `<button class="secondary" data-exempt="${esc(d.mac)}">${t('d_req_exempt')}</button>` : `<button class="secondary" data-strict="${esc(d.mac)}">${t('d_filter_again')}</button>`}</div></div>`).join('') : `<p class="muted">${t('d_no_devices')}</p>`}
   </div>
+  <div class="card"><h2>${t('pc_title')}</h2><p class="muted">${t('pc_text')}</p>
+    <label>${t('pc_system')}</label>
+    <select id="pcOs">${['windows', 'macos', 'linux', 'ios', 'android'].map((o) => `<option value="${o}" ${pcOs === o ? 'selected' : ''}>${t('pc_os_' + o)}</option>`).join('')}</select>
+    ${pcOs === 'android' ? '' : `<div class="actions"><button id="pcGet">${t('pc_protect')}</button>${pcOs === 'ios' ? '' : `<button class="secondary" id="pcUndo">${t('pc_remove')}</button>`}</div>`}
+    <h3>${t('pc_warn_title')}</h3>${t('pc_how_' + pcOs)}
+    <p class="muted">${t('pc_undo_note')}</p>
+  </div>
   <div class="card"><h2>${t('d_connect')}</h2><p class="muted">${t('d_connect_text', { host: `<code>${esc(location.hostname)}</code>` })}</p></div>
   <details class="card" id="settings" ${settingsOpen ? 'open' : ''}>
     <summary><b>${t('s_title')}</b>${status.partner.telegram ? ` <span class="pill ok">${t('s_telegram_on')}</span>` : ''}</summary>
@@ -202,6 +215,9 @@ function renderDash() {
   </details>
   <div class="card"><h2>${t('d_activity')}</h2>${status.log.slice().reverse().map((l) => `<div class="muted">${new Date(l.at).toLocaleString()} — ${esc(l.event)}</div>`).join('') || `<p class="muted">${t('d_nothing')}</p>`}</div>`;
 
+  $('#pcOs').onchange = (e) => { pcOs = e.target.value; renderDash(); };
+  if ($('#pcGet')) $('#pcGet').onclick = () => { location.href = `/api/device-script?os=${pcOs}&action=apply`; };
+  if ($('#pcUndo')) $('#pcUndo').onclick = () => { location.href = `/api/device-script?os=${pcOs}&action=undo`; };
   $('#settings').addEventListener('toggle', (e) => { settingsOpen = e.target.open; });
   $('#restore').onclick = async () => { try { await api('/api/restore', {}); load(); } catch (e) { fail(e); } };
   $('#pause').onclick = async () => {
