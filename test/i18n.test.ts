@@ -32,6 +32,9 @@ test('every translation key used by the page exists', () => {
   const T = vm.runInNewContext(src + ';T') as Record<string, Record<string, string>>;
   const used = new Set([...html.matchAll(/\bt\('([a-z0-9_]+)'/g)].map((m) => m[1]));
   used.delete('w1_d'); // prefix of keys built dynamically
+  used.delete('pc_os_');
+  used.delete('pc_how_');
+  for (const o of ['windows', 'macos', 'linux', 'ios', 'android']) { used.add('pc_os_' + o); used.add('pc_how_' + o); }
   for (const d of [60, 360, 1440, 4320]) used.add('w1_d' + d);
   for (const k of used) assert.ok(k in T.en, `missing key ${k}`);
 });

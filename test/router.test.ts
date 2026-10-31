@@ -1,4 +1,7 @@
 import { test } from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import assert from 'node:assert/strict';
 import { PROVIDERS, getProvider } from '../src/router/providers.js';
 import { judge, verifyFiltering, type VerifyDeps } from '../src/router/verify.js';
@@ -113,8 +116,41 @@ test('brand guides: every manual-only router in the database has notes, no passw
   for (const r of ROUTERS.filter((x) => !x.recipe)) assert.ok(BRAND_GUIDES.some((b) => b.id === r.id), `missing guide for ${r.id}`);
   for (const b of BRAND_GUIDES) {
     const t = brandGuideText(b);
-    assert.match(t, /UNVERIFIED/);
+    assert.match(t, b.verifiedOn ? /VERIFIED on/ : /UNVERIFIED/);
     assert.doesNotMatch(t, /password\s*[:=]\s*\S+/i);
   }
   assert.match(lockedGuideText(), /behind the ISP box/);
+});
+
+import { deviceDownload, deviceScript } from '../src/router/deviceScripts.js';
+import { buildDownloads } from '../src/router/buildDownloads.js';
+import { getProvider as gp } from '../src/router/providers.js';
+
+test('Windows launcher: elevates itself and embeds exactly the PowerShell script', () => {
+  const cf = gp('cloudflare-families');
+  for (const action of ['apply', 'undo'] as const) {
+    const f = deviceDownload('windows', cf, action);
+    assert.match(f.filename, /\.cmd$/);
+    assert.match(f.content, /-Verb RunAs/);
+    const b64 = /-EncodedCommand (\S+)/.exec(f.content)![1];
+    assert.equal(Buffer.from(b64, 'base64').toString('utf16le'), deviceScript('windows', cf, action).content);
+    assert.ok(f.content.split('\r\n').every((l) => l.length < 7000), 'cmd line limit');
+  }
+  assert.match(Buffer.from(/-EncodedCommand (\S+)/.exec(deviceDownload('windows', cf, 'apply').content)![1], 'base64').toString('utf16le'), /1\.1\.1\.3/);
+  assert.throws(() => deviceDownload('ios', cf, 'undo'), /Settings/);
+});
+
+test('README download files in downloads/ are up to date with the generator', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fgd-'));
+  const names = buildDownloads(tmp);
+  assert.ok(names.length >= 7);
+  for (const n of names) {
+    const committed = fs.readFileSync(new URL(`../downloads/${n}`, import.meta.url), 'utf8');
+    assert.equal(committed, fs.readFileSync(path.join(tmp, n), 'utf8'), `${n} is stale: run npm run build:downloads`);
+  }
+});
+
+test('iPhone profile is reproducible (stable UUIDs)', () => {
+  const cf = gp('cloudflare-families');
+  assert.equal(deviceDownload('ios', cf, 'apply').content, deviceDownload('ios', cf, 'apply').content);
 });

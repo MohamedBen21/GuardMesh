@@ -4,7 +4,7 @@ import { TelegramBot } from '../src/telegram.js';
 import { MIN, setup } from './helpers.js';
 
 const TOKEN = '123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw';
-const PARTNER_CHAT = '5108771793';
+const PARTNER_CHAT = '1234567890';
 
 /** A fake Telegram API that records calls and serves queued getUpdates results. */
 function fakeTelegram() {

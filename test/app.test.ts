@@ -34,7 +34,7 @@ test('wizard flow: setup (language, key delivered), skip DHCP, finish, dashboard
   const { call, sentToPartner, store } = boot();
   assert.equal((await call('/api/status')).json.setupDone, false);
 
-  const setup = await call('/api/setup', { mode: 'parental', delayMinutes: 60, lang: 'fr', partner: { telegramBotToken: TOKEN, telegramChatId: '5108771793' } });
+  const setup = await call('/api/setup', { mode: 'parental', delayMinutes: 60, lang: 'fr', partner: { telegramBotToken: TOKEN, telegramChatId: '1234567890' } });
   assert.equal(setup.status, 200);
   assert.equal(setup.json.keyDeliveredToPartner, true);
   assert.equal(setup.json.partnerKey, undefined, 'the key is not shown on screen when it was sent to the partner');
@@ -120,4 +120,19 @@ test('the page and its translations are served', async () => {
   const { base } = boot();
   assert.match(await (await fetch(base + '/')).text(), /FocusGuard Network/);
   assert.match(await (await fetch(base + '/translations.js')).text(), /const T = /);
+});
+
+test('device-script download: right file, attachment header, validated input, no setup needed', async () => {
+  const { base } = boot();
+  const win = await fetch(`${base}/api/device-script?os=windows&action=apply`);
+  assert.equal(win.status, 200);
+  assert.match(win.headers.get('content-disposition')!, /attachment; filename="focusguard-protect-windows\.cmd"/);
+  assert.match(await win.text(), /EncodedCommand/);
+  const undo = await fetch(`${base}/api/device-script?os=linux&action=undo`);
+  assert.match(undo.headers.get('content-disposition')!, /focusguard-remove-linux\.sh/);
+  assert.match(await undo.text(), /ipv4\.ignore-auto-dns no/);
+  const ios = await fetch(`${base}/api/device-script?os=ios&action=apply`);
+  assert.match(ios.headers.get('content-type')!, /apple-aspen-config/);
+  assert.equal((await fetch(`${base}/api/device-script?os=ios&action=undo`)).status, 400);
+  assert.equal((await fetch(`${base}/api/device-script?os=../../etc&action=apply`)).status, 400);
 });
