@@ -33,11 +33,11 @@ No router, no box, no install: download the file for your system and open it. It
 
 | Your system | Protect | Remove the protection | How to open it |
 |---|---|---|---|
-| **Windows** | [Protect this computer](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-remove-windows.cmd) | Double-click the file |
-| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-protect-macos.command) | [Remove](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-remove-macos.command) | Terminal: `bash ~/Downloads/guardmesh-protect-macos.command` |
-| **Linux** | [Protect this computer](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-remove-linux.sh) | Terminal: `bash ~/Downloads/guardmesh-protect-linux.sh` |
+| **Windows** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/guardmesh-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/guardmesh-remove-windows.cmd) | Double-click the file |
+| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/guardmesh-protect-macos.command) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/guardmesh-remove-macos.command) | Terminal: `bash ~/Downloads/guardmesh-protect-macos.command` |
+| **Linux** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/guardmesh-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/guardmesh-remove-linux.sh) | Terminal: `bash ~/Downloads/guardmesh-protect-linux.sh` |
 | **Android** | One setting: *Private DNS* → `family.cloudflare-dns.com` | Set Private DNS to *Automatic* | Settings → Network & internet |
-| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/guardmesh/releases/download/v0.4.4/guardmesh-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
+| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/focusGuard-network/releases/download/v0.4.4/guardmesh-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
 
 > The files are attached to the latest [release](https://github.com/MohamedBen21/guardmesh/releases/latest), so
 > the links download directly. You can read every file first in the
