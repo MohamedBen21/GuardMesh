@@ -150,8 +150,8 @@ Open the wizard address from any phone or computer on your Wi-Fi. Pick **English
 ### Telegram setup (2 minutes)
 
 1. In Telegram open **@BotFather**, send `/newbot`, pick a name and a username that ends in `bot`
-   (for example `my_guardmeshrd_bot`). BotFather replies with a **token**: keep it secret.
-2. **Choose a neutral bot name** (use `/setname`, e.g. "guardmeshrd"). Alerts appear on the lock screen.
+   (for example `my_guardmesh_bot`). BotFather replies with a **token**: keep it secret.
+2. **Choose a neutral bot name** (use `/setname`, e.g. "GuardMesh"). Alerts appear on the lock screen.
 3. The **partner** opens the new bot and presses **Start**. A bot cannot message someone who never started it.
 4. The partner sends any message to **@userinfobot** to learn their numeric **chat ID**.
 5. Enter the chat ID and token in wizard step 2 (or later in *Partner settings*) and press **Send test alert**.
@@ -202,7 +202,7 @@ docker compose stop                   # pause (keeps settings)
 docker compose down --rmi all -v && sudo rm -rf data     # remove everything
 ```
 Then turn the router's DHCP back on. If you disabled systemd-resolved's stub listener, remove
-`/etc/systemd/resolved.conf.d/guardmeshrd.conf` and run `sudo systemctl restart systemd-resolved`.
+`/etc/systemd/resolved.conf.d/guardmesh.conf` and run `sudo systemctl restart systemd-resolved`.
 
 ---
 

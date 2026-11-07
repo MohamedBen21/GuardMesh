@@ -181,7 +181,7 @@ export function windowsLauncher(p: Provider, action: 'apply' | 'undo'): Generate
     'pause',
     '',
   ].join('\r\n');
-  return { filename: `guardmeshrd-${action === 'apply' ? 'protect' : 'remove'}-windows.cmd`, content };
+  return { filename: `guardmesh-${action === 'apply' ? 'protect' : 'remove'}-windows.cmd`, content };
 }
 
 export type DownloadOs = 'windows' | 'macos' | 'linux' | 'ios';
@@ -195,6 +195,6 @@ export function deviceDownload(os: DownloadOs, p: Provider, action: 'apply' | 'u
     return { ...iosProfile(p), mime: 'application/x-apple-aspen-config' };
   }
   const s = deviceScript(os, p, action);
-  const filename = `guardmeshrd-${action === 'apply' ? 'protect' : 'remove'}-${os}.${os === 'macos' ? 'command' : 'sh'}`;
+  const filename = `guardmesh-${action === 'apply' ? 'protect' : 'remove'}-${os}.${os === 'macos' ? 'command' : 'sh'}`;
   return { filename, content: s.content, mime: 'application/octet-stream' };
 }

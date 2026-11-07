@@ -1,5 +1,5 @@
 #!/bin/bash
-# FocusGuard: set the filtering DNS (Cloudflare for Families (security + adult filter)) on THIS computer.
+# GuardMesh: set the filtering DNS (Cloudflare for Families (security + adult filter)) on THIS computer.
 # Run:  bash this-file.sh   (it asks for your password)
 set -e
 networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*' | while IFS= read -r svc; do

@@ -1,5 +1,5 @@
 #!/bin/bash
-# FocusGuard: remove the filtering DNS on THIS computer.
+# GuardMesh: remove the filtering DNS on THIS computer.
 # Run:  bash this-file.sh   (it asks for your password)
 set -e
 networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*' | while IFS= read -r svc; do

@@ -5,6 +5,6 @@ dist/
 .env
 .DS_Store
 Thumbs.db
-focusguard-backups/
+guardmesh-backups/
 # local state and secrets must never be committed
 state.json

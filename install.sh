@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# FocusGuard Network installer for Raspberry Pi OS / Debian / Ubuntu.
+# GuardMesh installer for Raspberry Pi OS / Debian / Ubuntu.
 # Run from the repo folder:  sudo ./install.sh
 set -euo pipefail
 
@@ -19,12 +19,12 @@ if ss -lntu 2>/dev/null | grep -qE '[:.]53\s'; then
   if systemctl is-active --quiet systemd-resolved; then
     echo "   Disabling systemd-resolved's DNS stub listener so AdGuard Home can use port 53…"
     mkdir -p /etc/systemd/resolved.conf.d
-    printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/focusguard.conf
+    printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/guardmesh.conf
     systemctl restart systemd-resolved
   fi
 fi
 
-echo ">> Starting FocusGuard Network…"
+echo ">> Starting GuardMesh…"
 docker compose up -d --build
 
 IP=$(hostname -I 2>/dev/null | awk '{print $1}')
