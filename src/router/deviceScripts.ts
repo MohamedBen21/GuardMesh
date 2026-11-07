@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 /** Same input, same UUID: reinstalling the profile replaces it instead of adding a second one, and builds are reproducible. */
 function stableUuid(seed: string): string {
-  const h = createHash('sha1').update('focusguard:' + seed).digest('hex');
+  const h = createHash('sha1').update('GuardMesh:' + seed).digest('hex');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`.toUpperCase();
 }
 import type { Provider } from './providers.js';
@@ -20,7 +20,7 @@ export interface GeneratedScript {
 export function deviceScript(os: Os, p: Provider, action: 'apply' | 'undo'): GeneratedScript {
   const v4 = p.v4.join(' ');
   const all = [...p.v4, ...p.v6].join(' ');
-  const header = `FocusGuard: ${action === 'apply' ? `set the filtering DNS (${p.name})` : 'remove the filtering DNS'} on THIS computer.`;
+  const header = `GuardMesh: ${action === 'apply' ? `set the filtering DNS (${p.name})` : 'remove the filtering DNS'} on THIS computer.`;
 
   if (os === 'windows') {
     const ps4 = p.v4.map((a) => `'${a}'`).join(',');
@@ -46,7 +46,7 @@ export function deviceScript(os: Os, p: Provider, action: 'apply' | 'undo'): Gen
             `Write-Host 'Done. DNS is back to automatic.'`,
           ];
     return {
-      filename: `focusguard-dns-windows-${action}.ps1`,
+      filename: `guardmesh-dns-windows-${action}.ps1`,
       content: [`# ${header}`, `# Run in PowerShell AS ADMINISTRATOR.`, `$ErrorActionPreference = 'Stop'`, ...body, ''].join('\n'),
     };
   }
@@ -57,7 +57,7 @@ export function deviceScript(os: Os, p: Provider, action: 'apply' | 'undo'): Gen
         ? `sudo networksetup -setdnsservers "$svc" ${all}`
         : `sudo networksetup -setdnsservers "$svc" empty`;
     return {
-      filename: `focusguard-dns-macos-${action}.sh`,
+      filename: `guardmesh-dns-macos-${action}.sh`,
       content: [
         '#!/bin/bash',
         `# ${header}`,
@@ -80,7 +80,7 @@ export function deviceScript(os: Os, p: Provider, action: 'apply' | 'undo'): Gen
       ? `nmcli connection modify "$name" ipv4.dns "${v4}" ipv4.ignore-auto-dns yes ipv6.dns "${p.v6.join(' ')}" ipv6.ignore-auto-dns ${p.v6.length ? 'yes' : 'no'}`
       : `nmcli connection modify "$name" ipv4.dns "" ipv4.ignore-auto-dns no ipv6.dns "" ipv6.ignore-auto-dns no`;
   return {
-    filename: `focusguard-dns-linux-${action}.sh`,
+    filename: `guardmesh-dns-linux-${action}.sh`,
     content: [
       '#!/usr/bin/env bash',
       `# ${header}`,
@@ -114,7 +114,7 @@ export function androidSteps(p: Provider): string {
 /** Configuration profile for iPhone / iPad / Mac (DNS over HTTPS). Tested on a real iPhone by the author. */
 export function iosProfile(p: Provider): GeneratedScript {
   if (!p.dohUrl) throw new Error(`${p.name} has no DNS-over-HTTPS address, so it cannot be used as a profile. Choose another provider.`);
-  const name = `FocusGuard DNS (${p.id})`;
+  const name = `GuardMesh DNS (${p.id})`;
   const content = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -129,7 +129,7 @@ export function iosProfile(p: Provider): GeneratedScript {
       </dict>
       <key>PayloadDescription</key><string>Uses a family-safe DNS service.</string>
       <key>PayloadDisplayName</key><string>${name}</string>
-      <key>PayloadIdentifier</key><string>com.focusguard.dns.payload.${p.id}</string>
+      <key>PayloadIdentifier</key><string>com.guardmesh.dns.payload.${p.id}</string>
       <key>PayloadType</key><string>com.apple.dnsSettings.managed</string>
       <key>PayloadUUID</key><string>${stableUuid(p.id + ':payload')}</string>
       <key>PayloadVersion</key><integer>1</integer>
@@ -137,7 +137,7 @@ export function iosProfile(p: Provider): GeneratedScript {
   </array>
   <key>PayloadDescription</key><string>Family-safe DNS for this device.</string>
   <key>PayloadDisplayName</key><string>${name}</string>
-  <key>PayloadIdentifier</key><string>com.focusguard.dns.${p.id}</string>
+  <key>PayloadIdentifier</key><string>com.guardmesh.dns.${p.id}</string>
   <key>PayloadRemovalDisallowed</key><false/>
   <key>PayloadType</key><string>Configuration</string>
   <key>PayloadUUID</key><string>${stableUuid(p.id + ':profile')}</string>
@@ -145,14 +145,14 @@ export function iosProfile(p: Provider): GeneratedScript {
 </dict>
 </plist>
 `;
-  return { filename: `focusguard-dns-${p.id}.mobileconfig`, content };
+  return { filename: `guardmesh-dns-${p.id}.mobileconfig`, content };
 }
 
 export const IOS_STEPS = [
   'iPhone / iPad:',
   '  1. Send the .mobileconfig file to the device (AirDrop, email, or open it in Safari from a link).',
   '  2. Settings → "Profile Downloaded" → Install → enter the passcode.',
-  '  3. Settings → General → VPN, DNS & Device Management → DNS → select the FocusGuard profile.',
+  '  3. Settings → General → VPN, DNS & Device Management → DNS → select the GuardMesh profile.',
   'To undo: remove the profile in Settings → General → VPN, DNS & Device Management.',
   'Note: the person can remove it again, so ask your partner to check it from time to time. Tested on a real iPhone by the author.',
 ].join('\n');
@@ -168,8 +168,8 @@ export function windowsLauncher(p: Provider, action: 'apply' | 'undo'): Generate
   const what = action === 'apply' ? 'turn filtering ON for this computer' : 'turn filtering OFF again for this computer';
   const content = [
     '@echo off',
-    `rem FocusGuard: ${what} (${action === 'apply' ? p.name : 'back to automatic DNS'}).`,
-    'rem Source: the same PowerShell script as focusguard-dns-windows-' + action + '.ps1 (embedded below).',
+    `rem GuardMesh: ${what} (${action === 'apply' ? p.name : 'back to automatic DNS'}).`,
+    'rem Source: the same PowerShell script as guardmesh-dns-windows-' + action + '.ps1 (embedded below).',
     'net session >nul 2>&1',
     'if %errorlevel% neq 0 (',
     '  echo Asking Windows for administrator permission...',
@@ -181,7 +181,7 @@ export function windowsLauncher(p: Provider, action: 'apply' | 'undo'): Generate
     'pause',
     '',
   ].join('\r\n');
-  return { filename: `focusguard-${action === 'apply' ? 'protect' : 'remove'}-windows.cmd`, content };
+  return { filename: `guardmeshrd-${action === 'apply' ? 'protect' : 'remove'}-windows.cmd`, content };
 }
 
 export type DownloadOs = 'windows' | 'macos' | 'linux' | 'ios';
@@ -195,6 +195,6 @@ export function deviceDownload(os: DownloadOs, p: Provider, action: 'apply' | 'u
     return { ...iosProfile(p), mime: 'application/x-apple-aspen-config' };
   }
   const s = deviceScript(os, p, action);
-  const filename = `focusguard-${action === 'apply' ? 'protect' : 'remove'}-${os}.${os === 'macos' ? 'command' : 'sh'}`;
+  const filename = `guardmeshrd-${action === 'apply' ? 'protect' : 'remove'}-${os}.${os === 'macos' ? 'command' : 'sh'}`;
   return { filename, content: s.content, mime: 'application/octet-stream' };
 }

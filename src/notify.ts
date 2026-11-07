@@ -65,7 +65,7 @@ export class StoreNotifier implements Notifier {
   async send(text: string, opts?: AlertOpts): Promise<void> {
     const lang = this.store.state.lang;
     const button = opts?.button ? { id: opts.button.id, label: t(lang, opts.button.labelKey) } : undefined;
-    const delivered = await sendToPartner(this.store.state.partner, `FocusGuard Network: ${text}`, { button });
+    const delivered = await sendToPartner(this.store.state.partner, `GuardMesh: ${text}`, { button });
     if (!delivered) console.log(`[notify:undelivered] ${text}`);
   }
 }

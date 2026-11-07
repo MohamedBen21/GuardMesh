@@ -1,11 +1,11 @@
 {
-  "name": "focusguard-network",
+  "name": "guardmesh",
   "version": "0.3.1",
   "description": "Network-level adult-content filter: a box version (AdGuard Home + guardian with accountability partner) and a no-hardware router mode",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "focusguard-router": "dist/router/cli.js"
+    "guardmesh-router": "dist/router/cli.js"
   },
   "scripts": {
     "dev": "tsx src/server.ts",

@@ -56,7 +56,7 @@ test('device scripts: apply and undo for each OS', () => {
   assert.match(deviceScript('windows', cf, 'undo').content, /-ResetServerAddresses/);
 
   const mac = deviceScript('macos', cf, 'apply');
-  assert.equal(mac.filename, 'focusguard-dns-macos-apply.sh');
+  assert.equal(mac.filename, 'guardmesh-dns-macos-apply.sh');
   assert.match(mac.content, /networksetup -setdnsservers "\$svc" 1\.1\.1\.3 1\.0\.0\.3 2606:4700:4700::1113/);
   assert.match(deviceScript('macos', cf, 'undo').content, /setdnsservers "\$svc" empty/);
 

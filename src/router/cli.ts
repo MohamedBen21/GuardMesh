@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * FocusGuard Router mode: no extra hardware.
+ * GuardMesh Router mode: no extra hardware.
  * Sets a family-filter DNS on your router (guided, or automatic for OpenWrt / MikroTik),
  * makes one-computer scripts, and checks that filtering is really active.
  */
@@ -79,7 +79,7 @@ function defaultOs(): string {
 }
 
 function help() {
-  console.log(`FocusGuard Router — no extra hardware needed
+  console.log(`GuardMesh Router — no extra hardware needed
 
 Usage:  npm run router -- <command> [options]
 
@@ -97,7 +97,7 @@ Run a command without options and it asks you questions. Useful options:
   --router <type>      manual (default) | huawei-hilink | openwrt | mikrotik
   --brand <id>         manual guide: add notes for your router brand: zte-f6xx | huawei-ont | nokia | tplink | fritzbox | livebox | xfinity | att | locked
   --backup <file>      undo: backup file to restore (default: the newest one in --backup-dir)
-  --backup-dir <dir>   where router backups are kept (default: ./focusguard-backups)
+  --backup-dir <dir>   where router backups are kept (default: ./guardmesh-backups)
   --host <ip>          router address (openwrt / mikrotik)
   --user <name>        router login (default root for openwrt, admin for mikrotik)
   --password <pw>      MikroTik password (or set the ROUTER_PASSWORD environment variable)
@@ -166,7 +166,7 @@ async function cmdSetup(flags: Flags, undo = false) {
     const host = typeof flags.host === 'string' ? flags.host : await ask('Router address?', '192.168.8.1');
     const user = typeof flags.user === 'string' ? flags.user : await ask('Router login?', 'admin');
     const password = (typeof flags.password === 'string' ? flags.password : undefined) ?? process.env.ROUTER_PASSWORD ?? (await ask('Router password (typing is visible; never saved):'));
-    const backupDir = typeof flags['backup-dir'] === 'string' ? flags['backup-dir'] : path.join(process.cwd(), 'focusguard-backups');
+    const backupDir = typeof flags['backup-dir'] === 'string' ? flags['backup-dir'] : path.join(process.cwd(), 'guardmesh-backups');
     const driver = new HilinkDriver(host);
     console.log(`\nRecipe "${driver.id}" is ${driver.status.toUpperCase()}: ${driver.basis}\nIt can only change the DNS servers; your Wi-Fi, address range and lease time are re-sent unchanged. Everything is backed up first.\n`);
     const io: RunnerIO = { log: (m) => console.log(m), confirm: (q) => confirm(q, false) };
@@ -309,7 +309,7 @@ async function main() {
   let cmd = pos[0];
   if (!cmd) {
     if (!interactive) return help();
-    console.log('FocusGuard Router — no extra hardware needed');
+    console.log('GuardMesh Router — no extra hardware needed');
     cmd = await choose(
       'What do you want to do?',
       [
@@ -343,7 +343,7 @@ async function main() {
         const provider = await pickProvider(flags);
         const os = (typeof flags.os === 'string' ? flags.os : await choose('Which device?', [{ value: 'windows', label: 'Windows' }, { value: 'macos', label: 'Mac' }, { value: 'linux', label: 'Linux' }, { value: 'android', label: 'Android' }, { value: 'ios', label: 'iPhone / iPad' }], defaultOs() as 'windows')) as string;
         if (os === 'android') console.log('\nSettings → Network → Private DNS → set to "Automatic".\n');
-        else if (os === 'ios') console.log('\nSettings → General → VPN, DNS & Device Management → remove the FocusGuard profile.\n');
+        else if (os === 'ios') console.log('\nSettings → General → VPN, DNS & Device Management → remove the GuardMesh profile.\n');
         else {
           const s = deviceScript(os as Os, provider, 'undo');
           const out = typeof flags.out === 'string' ? flags.out : process.cwd();

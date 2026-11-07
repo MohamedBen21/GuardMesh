@@ -43,7 +43,7 @@ export interface RunOptions {
 }
 
 export interface Backup {
-  tool: 'focusguard-router';
+  tool: 'guardmesh-router';
   version: 1;
   driver: string;
   host: string;
@@ -55,13 +55,13 @@ const sameList = (a: string[], b: string[]) => a.length === b.length && a.every(
 const show = (l: string[]) => (l.length ? l.join(', ') : '(automatic)');
 
 export function backupFileName(host: string, at: Date): string {
-  return `focusguard-router-backup-${host.replace(/[^\w.-]/g, '_')}-${at.toISOString().replace(/[:.]/g, '-')}.json`;
+  return `guardmesh-router-backup-${host.replace(/[^\w.-]/g, '_')}-${at.toISOString().replace(/[:.]/g, '-')}.json`;
 }
 
 export function latestBackup(dir: string, host?: string): string | undefined {
   const files = fs
     .readdirSync(dir)
-    .filter((f) => f.startsWith('focusguard-router-backup-') && f.endsWith('.json') && (!host || f.includes(host.replace(/[^\w.-]/g, '_'))))
+    .filter((f) => f.startsWith('guardmesh-router-backup-') && f.endsWith('.json') && (!host || f.includes(host.replace(/[^\w.-]/g, '_'))))
     .sort();
   return files.length ? path.join(dir, files[files.length - 1]) : undefined;
 }
@@ -90,7 +90,7 @@ export async function applyWithBackup(driver: RouterDriver, servers: string[], o
       return { ok: true };
     }
 
-    const backup: Backup = { tool: 'focusguard-router', version: 1, driver: driver.id, host: o.host, createdAt: now().toISOString(), before };
+    const backup: Backup = { tool: 'guardmesh-router', version: 1, driver: driver.id, host: o.host, createdAt: now().toISOString(), before };
     fs.mkdirSync(o.backupDir, { recursive: true });
     const backupFile = path.join(o.backupDir, backupFileName(o.host, now()));
     fs.writeFileSync(backupFile, JSON.stringify(backup, null, 2), { mode: 0o600 });
@@ -135,7 +135,7 @@ export async function applyWithBackup(driver: RouterDriver, servers: string[], o
 /** Restores the settings saved by applyWithBackup. */
 export async function undoFromBackup(driver: RouterDriver, backupFile: string, o: Omit<RunOptions, 'backupDir'>, io: RunnerIO): Promise<boolean> {
   const backup = JSON.parse(fs.readFileSync(backupFile, 'utf8')) as Backup;
-  if (backup.tool !== 'focusguard-router' || backup.driver !== driver.id) {
+  if (backup.tool !== 'guardmesh-router' || backup.driver !== driver.id) {
     throw new Error(`This backup is for "${backup.driver}", not "${driver.id}".`);
   }
   await driver.login(o.user, o.password);

@@ -1,8 +1,8 @@
-# FocusGuard Network
+# GuardMesh
 
 A network-level adult-content filter built for **a moment of weakness**.
 
-A browser extension can be switched off with one click. FocusGuard Network moves the protection out of the browser
+A browser extension can be switched off with one click. GuardMesh moves the protection out of the browser
 and makes turning it off **slow, visible and vetoable**: not impossible (nothing is, against someone who owns the
 device), but hard to do on impulse.
 
@@ -33,15 +33,15 @@ No router, no box, no install: download the file for your system and open it. It
 
 | Your system | Protect | Remove the protection | How to open it |
 |---|---|---|---|
-| **Windows** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-remove-windows.cmd) | Double-click the file |
-| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-macos.command) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-remove-macos.command) | Terminal: `bash ~/Downloads/focusguard-protect-macos.command` |
-| **Linux** | [Protect this computer](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-remove-linux.sh) | Terminal: `bash ~/Downloads/focusguard-protect-linux.sh` |
+| **Windows** | [Protect this computer](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-protect-windows.cmd) | [Remove](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-remove-windows.cmd) | Double-click the file |
+| **Mac** | [Protect this Mac](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-protect-macos.command) | [Remove](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-remove-macos.command) | Terminal: `bash ~/Downloads/guardmesh-protect-macos.command` |
+| **Linux** | [Protect this computer](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-protect-linux.sh) | [Remove](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-remove-linux.sh) | Terminal: `bash ~/Downloads/guardmesh-protect-linux.sh` |
 | **Android** | One setting: *Private DNS* → `family.cloudflare-dns.com` | Set Private DNS to *Automatic* | Settings → Network & internet |
-| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/focusGuard-network/releases/latest/download/focusguard-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
+| **iPhone / iPad** | [Profile](https://github.com/MohamedBen21/guardmesh/releases/latest/download/guardmesh-protect-iphone.mobileconfig) (or use the dashboard of the Box) | Settings → General → VPN, DNS & Device Management → remove | Open the file on the phone, then Settings → *Profile Downloaded* |
 
-> The files are attached to the latest [release](https://github.com/MohamedBen21/focusGuard-network/releases/latest), so
+> The files are attached to the latest [release](https://github.com/MohamedBen21/guardmesh/releases/latest), so
 > the links download directly. You can read every file first in the
-> [`downloads/`](https://github.com/MohamedBen21/focusGuard-network/tree/main/downloads) folder. On an iPhone, a
+> [`downloads/`](https://github.com/MohamedBen21/guardmesh/tree/main/downloads) folder. On an iPhone, a
 > download from the web may not offer to install the profile: use AirDrop, or the dashboard of the Box. If you run the
 > Box, its dashboard has the same buttons (card **Protect this computer**).
 
@@ -128,7 +128,7 @@ filtered on their own devices.
    Do this **before** turning DHCP off.
 3. **Get the code onto the box** and install:
    ```bash
-   unzip focusguard-network.zip && cd focusguard-network   # or: git clone <your repo url>
+   unzip guardmesh.zip && cd guardmesh   # or: git clone <your repo url>
    sudo ./install.sh
    ```
    `install.sh` installs Docker if needed, frees port 53 if the system uses it, and starts the two containers. When
@@ -150,8 +150,8 @@ Open the wizard address from any phone or computer on your Wi-Fi. Pick **English
 ### Telegram setup (2 minutes)
 
 1. In Telegram open **@BotFather**, send `/newbot`, pick a name and a username that ends in `bot`
-   (for example `my_focusguard_bot`). BotFather replies with a **token**: keep it secret.
-2. **Choose a neutral bot name** (use `/setname`, e.g. "FocusGuard"). Alerts appear on the lock screen.
+   (for example `my_guardmeshrd_bot`). BotFather replies with a **token**: keep it secret.
+2. **Choose a neutral bot name** (use `/setname`, e.g. "guardmeshrd"). Alerts appear on the lock screen.
 3. The **partner** opens the new bot and presses **Start**. A bot cannot message someone who never started it.
 4. The partner sends any message to **@userinfobot** to learn their numeric **chat ID**.
 5. Enter the chat ID and token in wizard step 2 (or later in *Partner settings*) and press **Send test alert**.
@@ -202,7 +202,7 @@ docker compose stop                   # pause (keeps settings)
 docker compose down --rmi all -v && sudo rm -rf data     # remove everything
 ```
 Then turn the router's DHCP back on. If you disabled systemd-resolved's stub listener, remove
-`/etc/systemd/resolved.conf.d/focusguard.conf` and run `sudo systemctl restart systemd-resolved`.
+`/etc/systemd/resolved.conf.d/guardmeshrd.conf` and run `sudo systemctl restart systemd-resolved`.
 
 ---
 
@@ -273,7 +273,7 @@ are **unverified** (written from general knowledge, not checked on devices; menu
 Every automatic recipe runs through the same runner: it reads the current settings, **saves a backup first**, shows the
 before/after, asks for confirmation, applies, then **reads the router back** to confirm the change stuck. Your router
 password is used once and never written to disk. Undo with
-`npm run router -- undo --router huawei-hilink --host <ip>` (uses the newest backup in `./focusguard-backups`).
+`npm run router -- undo --router huawei-hilink --host <ip>` (uses the newest backup in `./guardmesh-backups`).
 Each recipe carries a status: **verified** (run on a real device), **community** (reported working by users),
 **untested** (written from documentation or open-source code only).
 
@@ -389,7 +389,7 @@ docker-compose.yml   Linux box (host networking, DHCP)        docker-compose.win
 - **iPhone**: both setting the DNS by hand and installing the generated `.mobileconfig` profile worked.
 - **The one-computer scripts for macOS and Linux**: tested by a friend of the author, who reported they work (no model or version recorded).
 - **Telegram commands** `/status`, `/restore` and `/help` on the real Telegram service: all work.
-- **The one-click files** `focusguard-protect-windows.cmd` (self-elevating launcher) and `focusguard-protect-linux.sh`: both worked on the author's computers.
+- **The one-click files** `guardmesh-protect-windows.cmd` (self-elevating launcher) and `guardmesh-protect-linux.sh`: both worked on the author's computers.
 - **The one-computer script** (`device`, Windows): applied filtering to the PC it was run on and worked.
 - **The manual router method on a ZTE F660**, following the guide: an adult site was blocked in the browser, and the `verify` command reported **ACTIVE**. The ZTE F660 guide is marked *verified*.
 - Earlier, against a **real AdGuard Home** (Docker on Windows, DNS-only mode): setup, adult blocklists, DoH blocking,
@@ -422,7 +422,7 @@ Tried it on your hardware? Tell us the model and what happened (never passwords)
 
 MIT (see `LICENSE`). Use it to help people, and tell them what it does.
 
-*Disclaimer:* FocusGuard Network is an independent project. It is not made by, endorsed by or affiliated with
+*Disclaimer:* GuardMesh is an independent project. It is not made by, endorsed by or affiliated with
 Cloudflare, CleanBrowsing, OpenDNS/Cisco, AdGuard, Telegram, ZTE, Huawei, MikroTik, OpenWrt, TP-Link, Nokia, Apple,
 Google, Microsoft or any internet provider. Those names are trademarks of their owners and are used only to say which
 service or product something works with. The software is provided as is, without warranty.

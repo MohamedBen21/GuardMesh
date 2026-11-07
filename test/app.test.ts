@@ -118,7 +118,7 @@ test('pause request and instant cancel through the API', async () => {
 
 test('the page and its translations are served', async () => {
   const { base } = boot();
-  assert.match(await (await fetch(base + '/')).text(), /FocusGuard Network/);
+  assert.match(await (await fetch(base + '/')).text(), /GuardMesh/);
   assert.match(await (await fetch(base + '/translations.js')).text(), /const T = /);
 });
 
@@ -126,10 +126,10 @@ test('device-script download: right file, attachment header, validated input, no
   const { base } = boot();
   const win = await fetch(`${base}/api/device-script?os=windows&action=apply`);
   assert.equal(win.status, 200);
-  assert.match(win.headers.get('content-disposition')!, /attachment; filename="focusguard-protect-windows\.cmd"/);
+  assert.match(win.headers.get('content-disposition')!, /attachment; filename="guardmesh-protect-windows\.cmd"/);
   assert.match(await win.text(), /EncodedCommand/);
   const undo = await fetch(`${base}/api/device-script?os=linux&action=undo`);
-  assert.match(undo.headers.get('content-disposition')!, /focusguard-remove-linux\.sh/);
+  assert.match(undo.headers.get('content-disposition')!, /guardmesh-remove-linux\.sh/);
   assert.match(await undo.text(), /ipv4\.ignore-auto-dns no/);
   const ios = await fetch(`${base}/api/device-script?os=ios&action=apply`);
   assert.match(ios.headers.get('content-type')!, /apple-aspen-config/);

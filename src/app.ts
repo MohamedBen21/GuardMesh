@@ -137,7 +137,7 @@ export function buildApp(d: AppDeps) {
     await store.save();
 
     // Prefer delivering the key straight to the partner so the user never sees it.
-    const delivered = await send(parsed.partner!, `FocusGuard Network: ${t(lang, 'key_msg', { key })}`);
+    const delivered = await send(parsed.partner!, `GuardMesh: ${t(lang, 'key_msg', { key })}`);
     res.json({ keyDeliveredToPartner: delivered, partnerKey: delivered ? undefined : key });
   }));
 
@@ -162,7 +162,7 @@ export function buildApp(d: AppDeps) {
     s().setupDone = true;
     await store.save();
     await guardian.tick();
-    await send(s().partner, `FocusGuard Network: ${t(s().lang, 'setup_done')}`);
+    await send(s().partner, `GuardMesh: ${t(s().lang, 'setup_done')}`);
     res.json({ ok: true });
   }));
 
@@ -234,7 +234,7 @@ export function buildApp(d: AppDeps) {
 
   app.post('/api/test-alert', wrap(async (req, res) => {
     if (!requirePartner(req, res)) return;
-    const delivered = await send(s().partner, `FocusGuard Network: ${t(s().lang, 'test_alert')}`);
+    const delivered = await send(s().partner, `GuardMesh: ${t(s().lang, 'test_alert')}`);
     res.json({ delivered });
   }));
 

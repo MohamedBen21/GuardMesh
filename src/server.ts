@@ -36,7 +36,7 @@ async function loop() {
 setInterval(loop, 30_000);
 
 app.listen(PORT, () => {
-  console.log(`FocusGuard Network wizard on http://0.0.0.0:${PORT}`);
+  console.log(`GuardMesh wizard on http://0.0.0.0:${PORT}`);
   if (store.state.setupDone) {
     // A reboot or unplug is visible to the partner.
     notifier.send(t(store.state.lang, 'restarted')).catch(() => undefined);

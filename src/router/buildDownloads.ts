@@ -12,7 +12,7 @@ export function buildDownloads(dir: string): string[] {
     for (const action of ['apply', 'undo'] as const) {
       if (os === 'ios' && action === 'undo') continue;
       const f = deviceDownload(os, p, action);
-      const file = os === 'ios' ? 'focusguard-protect-iphone.mobileconfig' : f.filename;
+      const file = os === 'ios' ? 'guardmesh-protect-iphone.mobileconfig' : f.filename;
       fs.writeFileSync(path.join(dir, file), f.content);
       written.push(file);
     }
